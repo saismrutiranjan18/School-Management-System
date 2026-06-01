@@ -6,6 +6,9 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import Login from "./pages/Login";
 import Classes from "./pages/admin/Classes";
 import Subjects from "./pages/admin/Subjects";
+import TimetableBuilder from './pages/admin/TimetableBuilder'
+import TeacherMyTimetable from './pages/teacher/MyTimetable'
+import StudentMyTimetable from './pages/student/MyTimetable'
 
 const queryClient = new QueryClient();
 
@@ -38,16 +41,19 @@ export default function App() {
               <Route path="/admin/classes" element={<Classes />} />
               <Route path="/admin/subjects" element={<Subjects />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/timetable" element={<TimetableBuilder />} />
             </Route>
 
             {/* Teacher only */}
             <Route element={<ProtectedRoute allowedRoles={["teacher"]} />}>
               <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+              <Route path="/teacher/timetable" element={<TeacherMyTimetable />} />
             </Route>
 
             {/* Student only */}
             <Route element={<ProtectedRoute allowedRoles={["student"]} />}>
               <Route path="/student/dashboard" element={<StudentDashboard />} />
+              <Route path="/student/timetable" element={<StudentMyTimetable />} />
             </Route>
 
             {/* Parent only */}

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchClasses, createClass, updateClass, deleteClass } from '../../api/classes.api'
-import { fetchClasses as fetchTeachers } from '../../api/axios'
 import api from '../../api/axios'
 
 // ── Modal ──────────────────────────────────────────────────────────────

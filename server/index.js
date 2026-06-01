@@ -9,6 +9,7 @@ const studentRoutes = require('./routes/student.routes')
 const teacherRoutes = require('./routes/teacher.routes')
 const classRoutes = require('./routes/class.routes')
 const subjectRoutes = require('./routes/subject.routes')
+const timetableRoutes = require('./routes/timetable.routes')
 
 const app = express()
 
@@ -24,6 +25,8 @@ app.use('/api/students', studentRoutes)
 app.use('/api/teachers', teacherRoutes)
 app.use('/api/classes', classRoutes)
 app.use('/api/subjects', subjectRoutes)
+app.use('/api/timetable', timetableRoutes)
+
 
 // Health check
 app.get('/api/health', (req, res) => {
