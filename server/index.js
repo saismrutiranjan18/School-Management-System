@@ -7,6 +7,8 @@ require('dotenv').config()
 const authRoutes = require('./routes/auth.routes')
 const studentRoutes = require('./routes/student.routes')
 const teacherRoutes = require('./routes/teacher.routes')
+const classRoutes = require('./routes/class.routes')
+const subjectRoutes = require('./routes/subject.routes')
 
 const app = express()
 
@@ -20,6 +22,8 @@ app.use(express.json())
 app.use('/api/auth', authRoutes)
 app.use('/api/students', studentRoutes)
 app.use('/api/teachers', teacherRoutes)
+app.use('/api/classes', classRoutes)
+app.use('/api/subjects', subjectRoutes)
 
 // Health check
 app.get('/api/health', (req, res) => {
