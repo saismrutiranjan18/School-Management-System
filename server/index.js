@@ -10,6 +10,10 @@ const teacherRoutes = require('./routes/teacher.routes')
 const classRoutes = require('./routes/class.routes')
 const subjectRoutes = require('./routes/subject.routes')
 const timetableRoutes = require('./routes/timetable.routes')
+const attendanceRoutes = require('./routes/attendance.routes')
+const examRoutes  = require('./routes/exam.routes')
+const marksRoutes = require('./routes/marks.routes')
+
 
 const app = express()
 
@@ -26,6 +30,9 @@ app.use('/api/teachers', teacherRoutes)
 app.use('/api/classes', classRoutes)
 app.use('/api/subjects', subjectRoutes)
 app.use('/api/timetable', timetableRoutes)
+app.use('/api/attendance', attendanceRoutes)
+app.use('/api/exams', examRoutes)
+app.use('/api/marks', marksRoutes)
 
 
 // Health check
