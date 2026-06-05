@@ -19,6 +19,11 @@ const {
   downloadInvoice,
 } = require('../controllers/receiptInvoice.controller')
 
+const {
+  getFinancialReport,
+  downloadFinancialReportPDF,
+} = require('../controllers/financialReport.controller')
+
 // ── Fee Structure ────────────────────────────────────────────────────
 router.get('/structure',
   protect, authorizeRoles('admin'), getAllFeeStructures)
@@ -57,5 +62,11 @@ router.get('/invoice/:studentId',
   protect,
   downloadInvoice
 )
+
+router.get('/report/financial',
+  protect, authorizeRoles('admin'), getFinancialReport)
+
+router.get('/report/financial/pdf',
+  protect, authorizeRoles('admin'), downloadFinancialReportPDF)
 
 module.exports = router

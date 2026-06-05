@@ -19,6 +19,8 @@ import FeeStructure from "./pages/admin/FeeStructure";
 import FeeCollection from "./pages/admin/FeeCollection";
 import OutstandingDues from "./pages/admin/OutstandingDues";
 import MyFees from "./pages/student/MyFees";
+import Expenses from "./pages/admin/Expenses";
+import FinancialReport from "./pages/admin/FinancialReport";
 
 const queryClient = new QueryClient();
 
@@ -58,9 +60,15 @@ export default function App() {
                 path="/admin/fees/collection"
                 element={<FeeCollection />}
               />
+
               <Route
                 path="/admin/fees/outstanding"
                 element={<OutstandingDues />}
+              />
+              <Route path="/admin/expenses" element={<Expenses />} />
+              <Route
+                path="/admin/financial-report"
+                element={<FinancialReport />}
               />
             </Route>
 

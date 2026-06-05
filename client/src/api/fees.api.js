@@ -19,3 +19,9 @@ export const downloadReceipt = (receiptNo) =>
 
 export const downloadInvoice = (studentId, params = {}) =>
   api.get(`/fees/invoice/${studentId}`, { responseType: 'blob', params })
+
+export const fetchFinancialReport = (params = {}) =>
+  api.get('/fees/report/financial', { params }).then(r => r.data)
+
+export const downloadFinancialReportPDF = (params = {}) =>
+  api.get('/fees/report/financial/pdf', { responseType: 'blob', params })

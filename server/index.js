@@ -14,7 +14,7 @@ const attendanceRoutes = require('./routes/attendance.routes')
 const examRoutes  = require('./routes/exam.routes')
 const marksRoutes = require('./routes/marks.routes')
 const feesRoutes = require('./routes/fees.routes')
-
+const expenseRoutes = require('./routes/expense.routes')
 
 const app = express()
 
@@ -35,6 +35,7 @@ app.use('/api/attendance', attendanceRoutes)
 app.use('/api/exams', examRoutes)
 app.use('/api/marks', marksRoutes)
 app.use('/api/fees', feesRoutes)
+app.use('/api/expenses', expenseRoutes)
 
 
 // Health check
