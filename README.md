@@ -485,21 +485,5 @@ Room naming convention:
 
 ---
 
-## Team
-
-| Name | Enrollment No. |
-|---|---|
-| Rushabh Singh Baghel | EN23CS301883 |
-| Sai Smruti Ranjan Das | EN23CS301893 |
-| Sarthak K Goyal | EN23CS301885 |
-| Sakshi Joshi | EN23CS301898 |
-
-**Batch:** 6O-2, 6th Semester — B.Tech Computer Science and Engineering  
-**Institution:** Medicaps University, Indore  
-**Academic Year:** 2025–26
-
----
-
 ## License
 
-This project was developed for academic purposes as a final year project at Medicaps University, Indore. All rights reserved by the project team.
