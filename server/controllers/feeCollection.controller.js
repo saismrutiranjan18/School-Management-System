@@ -1,5 +1,6 @@
 const pool = require('../config/db')
 const { generateReceiptNo } = require('../utils/receipt')
+const { getIO } = require('../socket')
 
 // POST /api/fees/pay
 // Record a fee payment for a student
@@ -16,22 +17,37 @@ const recordPayment = async (req, res) => {
   const receipt_no = generateReceiptNo()
 
   try {
-    const result = await pool.query(`
-      INSERT INTO fee_payments
-        (student_id, fee_type, amount, payment_date,
-         method, receipt_no, academic_year, month_year, notes, recorded_by)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-      RETURNING *
-    `, [
-      student_id, fee_type, amount,
-      payment_date || new Date().toISOString().split('T')[0],
-      method,
-      receipt_no,
-      academic_year || '2024-25',
-      month_year || null,
-      notes || null,
-      req.user.id,
-    ])
+    const result = await pool.query(
+      `INSERT INTO fee_payments
+         (student_id, fee_type, amount, payment_date,
+          method, receipt_no, academic_year, month_year, notes, recorded_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+       RETURNING *`,
+      [
+        student_id, fee_type, amount,
+        payment_date || new Date().toISOString().split('T')[0],
+        method,
+        receipt_no,
+        academic_year || '2024-25',
+        month_year || null,
+        notes || null,
+        req.user.id,
+      ]
+    )
+
+    try {
+      const io = getIO()
+
+      io.to('role:admin').emit('notification', {
+        type:       'fee_payment',
+        title:      'Fee Payment Received',
+        body:       `₹${amount} collected for ${fee_type} — Receipt ${receipt_no}`,
+        priority:   'normal',
+        created_at: new Date().toISOString(),
+      })
+    } catch (socketErr) {
+      console.error('Socket emit error:', socketErr.message)
+    }
 
     res.status(201).json({
       message:    'Payment recorded successfully.',

@@ -4,6 +4,7 @@ import { fetchClasses } from '../../api/classes.api'
 import { fetchExams } from '../../api/exams.api'
 import { fetchMarksSheet, enterMarks } from '../../api/marks.api'
 import api from '../../api/axios'
+import DashboardLayout from '../../components/DashboardLayout'
 
 export default function EnterMarks() {
   const [classId,   setClassId]   = useState('')
@@ -78,11 +79,12 @@ export default function EnterMarks() {
   }
 
   return (
-    <div className="p-6 max-w-5xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Enter Marks</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Select exam, class, and subject to enter marks</p>
-      </div>
+    <DashboardLayout title="Enter Marks">
+      <div className="p-6 max-w-5xl">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-gray-800">Enter Marks</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Select exam, class, and subject to enter marks</p>
+        </div>
 
       {/* Selectors */}
       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -226,6 +228,7 @@ export default function EnterMarks() {
           </>
         )
       )}
-    </div>
-  )
+        </div>
+  </DashboardLayout>
+)
 }

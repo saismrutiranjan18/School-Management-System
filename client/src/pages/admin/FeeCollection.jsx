@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchStudentFeeStatus, recordPayment, downloadReceipt, downloadInvoice } from '../../api/fees.api'
 import api from '../../api/axios'
 import { triggerPDFDownload } from '../../utils/downloadPDF'
+import DashboardLayout from '../../components/DashboardLayout'
 
 const METHODS        = ['cash','cheque','bank_transfer']
 const METHOD_BADGE   = {
@@ -191,11 +192,12 @@ export default function FeeCollection() {
   }
 
   return (
-    <div className="p-6 max-w-5xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Fee Collection</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Search a student to view dues and record payments</p>
-      </div>
+    <DashboardLayout title="Fee Collection">
+      <div className="p-6 max-w-5xl">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-gray-800">Fee Collection</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Search a student to view dues and record payments</p>
+        </div>
 
       {/* Student Search */}
       <div className="relative mb-6 max-w-sm">
@@ -360,6 +362,7 @@ export default function FeeCollection() {
           onClose={() => setPayModal(null)}
         />
       )}
-    </div>
-  )
+        </div>
+  </DashboardLayout>
+)
 }

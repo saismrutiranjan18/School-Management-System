@@ -2,6 +2,7 @@ import { useSelector } from 'react-redux'
 import { useQuery } from '@tanstack/react-query'
 import { fetchTimetableByTeacher } from '../../api/timetable.api'
 import api from '../../api/axios'
+import DashboardLayout from '../../components/DashboardLayout'
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -44,11 +45,12 @@ export default function MyTimetable() {
   )
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">My Timetable</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Your weekly teaching schedule</p>
-      </div>
+    <DashboardLayout title="My Timetable">
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-gray-800">My Timetable</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Your weekly teaching schedule</p>
+        </div>
 
       <div className="overflow-x-auto">
         <table className="w-full border-separate border-spacing-1 min-w-[700px]">
@@ -101,6 +103,7 @@ export default function MyTimetable() {
           </tbody>
         </table>
       </div>
-    </div>
-  )
+       </div>
+  </DashboardLayout>
+)
 }

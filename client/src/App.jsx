@@ -21,6 +21,11 @@ import OutstandingDues from "./pages/admin/OutstandingDues";
 import MyFees from "./pages/student/MyFees";
 import Expenses from "./pages/admin/Expenses";
 import FinancialReport from "./pages/admin/FinancialReport";
+import AdminAnnouncements   from './pages/admin/Announcements'
+import TeacherAnnouncements from './pages/teacher/Announcements'
+import StudentNoticeBoard   from './pages/student/NoticBoard'
+import ParentNoticeBoard    from './pages/parent/NoticeBoard'
+import { SocketProvider } from './context/SocketContext'
 
 const queryClient = new QueryClient();
 
@@ -43,6 +48,7 @@ export default function App() {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
+        <SocketProvider> 
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -70,6 +76,8 @@ export default function App() {
                 path="/admin/financial-report"
                 element={<FinancialReport />}
               />
+              <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+
             </Route>
 
             {/* Teacher only */}
@@ -89,6 +97,8 @@ export default function App() {
                 element={<AttendanceReport />}
               />
               <Route path="/teacher/marks" element={<EnterMarks />} />
+              <Route path="/teacher/announcements" element={<TeacherAnnouncements />} />
+
             </Route>
 
             {/* Student only */}
@@ -101,16 +111,21 @@ export default function App() {
               <Route path="/student/attendance" element={<MyAttendance />} />
               <Route path="/student/results" element={<MyResults />} />
               <Route path="/student/fees" element={<MyFees />} />
+              <Route path="/student/notices" element={<StudentNoticeBoard />} />
+
             </Route>
 
             {/* Parent only */}
             <Route element={<ProtectedRoute allowedRoles={["parent"]} />}>
               <Route path="/parent/dashboard" element={<ParentDashboard />} />
+              <Route path="/parent/notices" element={<ParentNoticeBoard />} />
+
             </Route>
 
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </BrowserRouter>
+        </SocketProvider>  
       </QueryClientProvider>
     </Provider>
   );

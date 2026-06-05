@@ -15,6 +15,9 @@ const examRoutes  = require('./routes/exam.routes')
 const marksRoutes = require('./routes/marks.routes')
 const feesRoutes = require('./routes/fees.routes')
 const expenseRoutes = require('./routes/expense.routes')
+const announcementRoutes = require('./routes/announcement.routes')
+const http           = require('http')
+const { initSocket } = require('./socket')
 
 const app = express()
 
@@ -36,6 +39,7 @@ app.use('/api/exams', examRoutes)
 app.use('/api/marks', marksRoutes)
 app.use('/api/fees', feesRoutes)
 app.use('/api/expenses', expenseRoutes)
+app.use('/api/announcements', announcementRoutes)
 
 
 // Health check
@@ -57,6 +61,10 @@ app.use((err, req, res, next) => {
 })
 
 const PORT = process.env.PORT || 5000
-app.listen(PORT, () => {
+const server = http.createServer(app)
+initSocket(server)
+
+server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`)
+  console.log(`🔌 Socket.io ready`)
 })

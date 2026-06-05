@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchStudentFeeStatus, downloadReceipt, downloadInvoice } from '../../api/fees.api'
 import api from '../../api/axios'
 import { triggerPDFDownload } from '../../utils/downloadPDF'
+import DashboardLayout from '../../components/DashboardLayout'
 
 const STATUS_BADGE = {
   paid:    'bg-green-100 text-green-700',
@@ -47,11 +48,12 @@ export default function MyFees() {
   if (isLoading) return <p className="p-8 text-gray-400 text-sm">Loading fee details...</p>
 
   return (
-    <div className="p-6 max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">My Fees</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Your fee dues and payment history</p>
-      </div>
+    <DashboardLayout title="My Fees">
+      <div className="p-6 max-w-4xl">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-gray-800">My Fees</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Your fee dues and payment history</p>
+        </div>
 
       {feeStatus && (
         <>
@@ -154,6 +156,7 @@ export default function MyFees() {
           )}
         </>
       )}
-    </div>
-  )
+        </div>
+  </DashboardLayout>
+)
 }

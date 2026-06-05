@@ -5,6 +5,7 @@ import {
   fetchFeeStructures, createFeeStructure,
   updateFeeStructure, deleteFeeStructure,
 } from '../../api/fees.api'
+import DashboardLayout from '../../components/DashboardLayout'
 
 const FEE_TYPES      = ['Tuition Fee','Admission Fee','Library Fee','Transport Fee','Sports Fee','Lab Fee','Exam Fee','Other']
 const FREQUENCIES    = ['monthly','quarterly','yearly','one-time']
@@ -169,12 +170,13 @@ export default function FeeStructure() {
   }, 0)
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-800">Fee Structure</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Define fee types and amounts per class</p>
+    <DashboardLayout title="Fee Structure">
+      <div className="p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-800">Fee Structure</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Define fee types and amounts per class</p>
         </div>
         <button onClick={() => setModal('add')}
           className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
@@ -278,6 +280,7 @@ export default function FeeStructure() {
           existing={modal === 'add' ? null : modal}
         />
       )}
-    </div>
-  )
+       </div>
+  </DashboardLayout>
+)
 }

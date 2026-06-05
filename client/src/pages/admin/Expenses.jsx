@@ -4,6 +4,7 @@ import {
   fetchExpenses, createExpense,
   updateExpense, deleteExpense,
 } from '../../api/expenses.api'
+import DashboardLayout from '../../components/DashboardLayout'
 
 const CATEGORIES = [
   'Salaries','Utilities','Maintenance','Stationery',
@@ -170,6 +171,7 @@ export default function Expenses() {
   const totalExpense = data?.total_expense || 0
 
   return (
+  <DashboardLayout title="Expenses">
     <div className="p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -315,6 +317,7 @@ export default function Expenses() {
           existing={modal === 'add' ? null : modal}
         />
       )}
-    </div>
-  )
+        </div>
+  </DashboardLayout>
+)
 }

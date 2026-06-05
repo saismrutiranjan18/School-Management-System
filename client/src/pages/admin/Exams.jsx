@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchExams, createExam, updateExam, deleteExam } from '../../api/exams.api'
 import { fetchClasses } from '../../api/classes.api'
+import DashboardLayout from '../../components/DashboardLayout'
 
 function ExamModal({ onClose, existing }) {
   const qc     = useQueryClient()
@@ -140,6 +141,7 @@ export default function Exams() {
   })
 
   return (
+  <DashboardLayout title="Exams">
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -212,6 +214,7 @@ export default function Exams() {
       {modal && (
         <ExamModal onClose={() => setModal(null)} existing={modal === 'add' ? null : modal} />
       )}
-    </div>
-  )
+        </div>
+  </DashboardLayout>
+)
 }

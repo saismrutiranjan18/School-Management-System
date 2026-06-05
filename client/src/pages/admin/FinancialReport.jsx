@@ -7,6 +7,7 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { fetchFinancialReport, downloadFinancialReportPDF } from '../../api/fees.api'
 import { triggerPDFDownload } from '../../utils/downloadPDF'
+import DashboardLayout from '../../components/DashboardLayout'
 
 const PIE_COLORS = [
   '#2563eb','#16a34a','#dc2626','#d97706',
@@ -52,12 +53,13 @@ export default function FinancialReport() {
   const byCat    = data?.expense_by_category   || []
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-800">Financial Report</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Revenue vs expenses overview</p>
+    <DashboardLayout title="Financial Report">
+      <div className="p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-800">Financial Report</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Revenue vs expenses overview</p>
         </div>
         <button
           onClick={handleDownloadPDF}
@@ -309,6 +311,7 @@ export default function FinancialReport() {
           </div>
         </>
       )}
-    </div>
-  )
+        </div>
+  </DashboardLayout>
+)
 }

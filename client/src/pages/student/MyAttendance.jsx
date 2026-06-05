@@ -2,6 +2,7 @@ import { useSelector } from 'react-redux'
 import { useQuery } from '@tanstack/react-query'
 import { fetchStudentAttendance } from '../../api/attendance.api'
 import api from '../../api/axios'
+import DashboardLayout from '../../components/DashboardLayout'
 
 export default function MyAttendance() {
   const { user } = useSelector(state => state.auth)
@@ -39,11 +40,12 @@ export default function MyAttendance() {
   )
 
   return (
-    <div className="p-6 max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">My Attendance</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Subject-wise attendance summary</p>
-      </div>
+    <DashboardLayout title="My Attendance">
+      <div className="p-6 max-w-4xl">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-gray-800">My Attendance</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Subject-wise attendance summary</p>
+        </div>
 
       {/* Subject-wise summary cards */}
       <div className="grid grid-cols-2 gap-4 mb-8">
@@ -133,6 +135,7 @@ export default function MyAttendance() {
           </div>
         </>
       )}
-    </div>
-  )
+        </div>
+  </DashboardLayout>
+)
 }

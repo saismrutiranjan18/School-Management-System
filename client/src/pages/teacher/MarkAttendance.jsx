@@ -4,6 +4,7 @@ import { fetchClasses } from '../../api/classes.api'
 import { fetchAttendanceSheet, markAttendance } from '../../api/attendance.api'
 import api from '../../api/axios'
 import { useSelector } from 'react-redux'
+import DashboardLayout from '../../components/DashboardLayout'
 
 const STATUS_STYLES = {
   present: 'bg-green-100 text-green-700 border-green-300',
@@ -94,11 +95,12 @@ export default function MarkAttendance() {
   const lateCount    = records.filter(r => r.status === 'late').length
 
   return (
-    <div className="p-6 max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Mark Attendance</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Select class, subject, and date to begin</p>
-      </div>
+    <DashboardLayout title="Mark Attendance">
+      <div className="p-6 max-w-4xl">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-gray-800">Mark Attendance</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Select class, subject, and date to begin</p>
+        </div>
 
       {/* Filters */}
       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -275,6 +277,7 @@ export default function MarkAttendance() {
           )}
         </>
       )}
-    </div>
-  )
+        </div>
+  </DashboardLayout>
+)
 }

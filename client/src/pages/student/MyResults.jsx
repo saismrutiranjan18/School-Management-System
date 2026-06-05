@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchExams } from '../../api/exams.api'
 import { fetchReportCard, downloadReportCardPDF } from '../../api/marks.api'
 import api from '../../api/axios'
+import DashboardLayout from '../../components/DashboardLayout'
 
 const GRADE_COLOR = (grade) => {
   if (['A+','A'].includes(grade)) return 'bg-green-100 text-green-700'
@@ -54,11 +55,12 @@ export default function MyResults() {
   }
 
   return (
-    <div className="p-6 max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">My Results</h1>
-        <p className="text-sm text-gray-500 mt-0.5">View your exam results and download report cards</p>
-      </div>
+    <DashboardLayout title="My Results">
+      <div className="p-6 max-w-4xl">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-gray-800">My Results</h1>
+          <p className="text-sm text-gray-500 mt-0.5">View your exam results and download report cards</p>
+        </div>
 
       {/* Exam selector */}
       <select value={examId} onChange={e => setExamId(e.target.value)}
@@ -155,6 +157,7 @@ export default function MyResults() {
           </div>
         </>
       )}
-    </div>
-  )
+       </div>
+  </DashboardLayout>
+)
 }

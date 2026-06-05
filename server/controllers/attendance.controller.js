@@ -1,5 +1,6 @@
 const pool = require('../config/db')
 const { sendAbsenceAlert } = require('../utils/mailer')
+const { getIO } = require('../socket')
 
 // POST /api/attendance
 // Mark attendance for an entire class for one subject on one date
@@ -12,6 +13,7 @@ const markAttendance = async (req, res) => {
   }
 
   const client = await pool.connect()
+
   try {
     await client.query('BEGIN')
 
@@ -21,36 +23,34 @@ const markAttendance = async (req, res) => {
       const { student_id, status, remarks } = record
 
       // Upsert attendance record
-      const result = await client.query(`
-        INSERT INTO attendance
-          (student_id, class_id, subject_id, teacher_id, date, status, remarks)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        ON CONFLICT (student_id, subject_id, date)
-        DO UPDATE SET
-          status     = EXCLUDED.status,
-          remarks    = EXCLUDED.remarks,
-          teacher_id = EXCLUDED.teacher_id
-        RETURNING *
-      `, [student_id, class_id, subject_id, teacher_id, date, status, remarks || null])
+      const result = await client.query(
+        `INSERT INTO attendance (student_id, class_id, subject_id, teacher_id, date, status, remarks)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (student_id, subject_id, date) DO UPDATE
+         SET status = EXCLUDED.status,
+             remarks = EXCLUDED.remarks,
+             teacher_id = EXCLUDED.teacher_id
+         RETURNING *`,
+        [student_id, class_id, subject_id, teacher_id, date, status, remarks || null]
+      )
 
       results.push(result.rows[0])
 
       // Send email alert if absent
       if (status === 'absent') {
         // Fetch student + guardian info
-        const studentInfo = await client.query(`
-          SELECT
-            u.name       AS student_name,
-            s.guardian_name,
-            s.guardian_email,
-            sub.name     AS subject_name
-          FROM students s
-          JOIN users u    ON s.user_id    = u.id
-          JOIN subjects sub ON sub.id     = $2
-          WHERE s.id = $1
-        `, [student_id, subject_id])
+        const studentInfo = await client.query(
+          `SELECT u.name AS student_name, s.guardian_name, s.guardian_email,
+                  sub.name AS subject_name
+           FROM students s
+           JOIN users u ON s.user_id = u.id
+           JOIN subjects sub ON sub.id = $2
+           WHERE s.id = $1`,
+          [student_id, subject_id]
+        )
 
         const info = studentInfo.rows[0]
+
         if (info) {
           // Fire and forget — don't await, don't block the response
           sendAbsenceAlert({
@@ -60,11 +60,47 @@ const markAttendance = async (req, res) => {
             subjectName:  info.subject_name,
             date,
           }).catch(console.error)
+
+          try {
+            const io = getIO()
+
+            // Notify the student's parent via their personal room
+            // We look up parent user_id via guardian_email
+            const parentUserResult = await client.query(
+              `SELECT u.id FROM users u
+               JOIN students s ON s.guardian_email = u.email
+               WHERE s.id = $1 AND u.role = 'parent'
+               LIMIT 1`,
+              [student_id]
+            )
+
+            if (parentUserResult.rows[0]) {
+              io.to(`user:${parentUserResult.rows[0].id}`).emit('notification', {
+                type:       'absence',
+                title:      'Absence Alert',
+                body:       `${info.student_name} was marked absent in ${info.subject_name} today.`,
+                priority:   'high',
+                created_at: new Date().toISOString(),
+              })
+            }
+
+            // Also notify admins
+            io.to('role:admin').emit('notification', {
+              type:       'absence',
+              title:      'Student Absent',
+              body:       `${info.student_name} marked absent in ${info.subject_name}.`,
+              priority:   'normal',
+              created_at: new Date().toISOString(),
+            })
+          } catch (socketErr) {
+            console.error('Socket emit error:', socketErr.message)
+          }
         }
       }
     }
 
     await client.query('COMMIT')
+
     res.status(201).json({
       message: `Attendance marked for ${results.length} students.`,
       records: results,

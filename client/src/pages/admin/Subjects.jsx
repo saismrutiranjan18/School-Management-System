@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchSubjects, createSubject, updateSubject, deleteSubject } from '../../api/subjects.api'
 import { fetchClasses } from '../../api/classes.api'
 import api from '../../api/axios'
+import DashboardLayout from '../../components/DashboardLayout'
 
 function SubjectModal({ onClose, existing }) {
   const qc = useQueryClient()
@@ -158,12 +159,13 @@ export default function Subjects() {
   )
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-800">Subjects</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Manage subjects and assign teachers</p>
-        </div>
+    <DashboardLayout title="Subjects">
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-800">Subjects</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Manage subjects and assign teachers</p>
+          </div>
         <button
           onClick={() => setModal('add')}
           className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
@@ -253,6 +255,7 @@ export default function Subjects() {
           existing={modal === 'add' ? null : modal}
         />
       )}
-    </div>
-  )
+        </div>
+  </DashboardLayout>
+)
 }

@@ -12,6 +12,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchClasses } from '../../api/classes.api'
 import { fetchTimetableByClass, assignPeriod, deletePeriod } from '../../api/timetable.api'
 import api from '../../api/axios'
+import DashboardLayout from '../../components/DashboardLayout'
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -204,6 +205,7 @@ export default function TimetableBuilder() {
   }
 
   return (
+  <DashboardLayout title="Timetable Builder">
     <div className="p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -353,6 +355,7 @@ export default function TimetableBuilder() {
           </DragOverlay>
         </DndContext>
       )}
-    </div>
-  )
+       </div>
+  </DashboardLayout>
+)
 }
