@@ -13,3 +13,9 @@ export const fetchStudentFeeStatus  = (studentId, params = {}) =>
   api.get(`/fees/student/${studentId}`, { params }).then(r => r.data)
 export const fetchCollectionSummary = (params = {}) => api.get('/fees/collection', { params }).then(r => r.data)
 export const fetchOutstandingDues   = (params = {}) => api.get('/fees/outstanding', { params }).then(r => r.data)
+
+export const downloadReceipt = (receiptNo) =>
+  api.get(`/fees/receipt/${receiptNo}`, { responseType: 'blob' })
+
+export const downloadInvoice = (studentId, params = {}) =>
+  api.get(`/fees/invoice/${studentId}`, { responseType: 'blob', params })

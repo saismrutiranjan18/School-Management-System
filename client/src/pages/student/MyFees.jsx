@@ -1,7 +1,8 @@
 import { useSelector } from 'react-redux'
 import { useQuery } from '@tanstack/react-query'
-import { fetchStudentFeeStatus } from '../../api/fees.api'
+import { fetchStudentFeeStatus, downloadReceipt, downloadInvoice } from '../../api/fees.api'
 import api from '../../api/axios'
+import { triggerPDFDownload } from '../../utils/downloadPDF'
 
 const STATUS_BADGE = {
   paid:    'bg-green-100 text-green-700',
@@ -25,6 +26,24 @@ export default function MyFees() {
     enabled:  !!studentRecord?.id,
   })
 
+  const handleDownloadReceipt = async (receiptNo) => {
+    try {
+      const res = await downloadReceipt(receiptNo)
+      triggerPDFDownload(res, `receipt-${receiptNo}.pdf`)
+    } catch {
+      alert('Failed to download receipt.')
+    }
+  }
+
+  const handleDownloadInvoice = async () => {
+    try {
+      const res = await downloadInvoice(studentRecord.id)
+      triggerPDFDownload(res, `invoice.pdf`)
+    } catch {
+      alert('Failed to download invoice.')
+    }
+  }
+
   if (isLoading) return <p className="p-8 text-gray-400 text-sm">Loading fee details...</p>
 
   return (
@@ -39,9 +58,9 @@ export default function MyFees() {
           {/* Summary */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             {[
-              { label: 'Total Due',   value: `₹${feeStatus.summary.total_due.toLocaleString('en-IN')}`,     color: 'text-gray-800' },
-              { label: 'Paid',        value: `₹${feeStatus.summary.total_paid.toLocaleString('en-IN')}`,    color: 'text-green-600' },
-              { label: 'Balance',     value: `₹${feeStatus.summary.total_balance.toLocaleString('en-IN')}`, color: feeStatus.summary.total_balance > 0 ? 'text-red-500' : 'text-green-600' },
+              { label: 'Total Due', value: `₹${feeStatus.summary.total_due.toLocaleString('en-IN')}`,     color: 'text-gray-800' },
+              { label: 'Paid',      value: `₹${feeStatus.summary.total_paid.toLocaleString('en-IN')}`,    color: 'text-green-600' },
+              { label: 'Balance',   value: `₹${feeStatus.summary.total_balance.toLocaleString('en-IN')}`, color: feeStatus.summary.total_balance > 0 ? 'text-red-500' : 'text-green-600' },
             ].map(s => (
               <div key={s.label} className="bg-white border border-gray-200 rounded-xl p-4 text-center">
                 <p className="text-xs text-gray-500">{s.label}</p>
@@ -87,7 +106,15 @@ export default function MyFees() {
           {/* Payment history */}
           {feeStatus.payments.length > 0 && (
             <>
-              <h2 className="text-sm font-semibold text-gray-700 mb-3">Payment History</h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-gray-700">Payment History</h2>
+                <button
+                  onClick={handleDownloadInvoice}
+                  className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  ⬇ Download Full Invoice
+                </button>
+              </div>
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
@@ -96,6 +123,7 @@ export default function MyFees() {
                       <th className="text-left px-5 py-3">Fee Type</th>
                       <th className="text-left px-5 py-3">Date</th>
                       <th className="text-right px-5 py-3">Amount</th>
+                      <th className="text-center px-5 py-3">PDF</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -108,6 +136,14 @@ export default function MyFees() {
                         </td>
                         <td className="px-5 py-3 text-right font-semibold text-green-600">
                           ₹{parseFloat(p.amount).toLocaleString('en-IN')}
+                        </td>
+                        <td className="px-5 py-3 text-center">
+                          <button
+                            onClick={() => handleDownloadReceipt(p.receipt_no)}
+                            className="text-xs px-3 py-1 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50"
+                          >
+                            ⬇ PDF
+                          </button>
                         </td>
                       </tr>
                     ))}

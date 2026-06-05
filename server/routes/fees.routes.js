@@ -14,6 +14,10 @@ const {
   getCollectionSummary,
   getOutstandingDues,
 } = require('../controllers/feeCollection.controller')
+const {
+  downloadReceipt,
+  downloadInvoice,
+} = require('../controllers/receiptInvoice.controller')
 
 // ── Fee Structure ────────────────────────────────────────────────────
 router.get('/structure',
@@ -43,5 +47,15 @@ router.get('/collection',
 
 router.get('/outstanding',
   protect, authorizeRoles('admin'), getOutstandingDues)
+
+router.get('/receipt/:receiptNo',
+  protect,
+  downloadReceipt
+)
+
+router.get('/invoice/:studentId',
+  protect,
+  downloadInvoice
+)
 
 module.exports = router

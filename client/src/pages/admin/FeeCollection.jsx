@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchStudentFeeStatus, recordPayment } from '../../api/fees.api'
+import { fetchStudentFeeStatus, recordPayment, downloadReceipt, downloadInvoice } from '../../api/fees.api'
 import api from '../../api/axios'
+import { triggerPDFDownload } from '../../utils/downloadPDF'
 
 const METHODS        = ['cash','cheque','bank_transfer']
 const METHOD_BADGE   = {
@@ -151,9 +152,8 @@ function PaymentModal({ student, due, onClose }) {
 export default function FeeCollection() {
   const [searchEmail, setSearchEmail] = useState('')
   const [studentId,   setStudentId]   = useState(null)
-  const [payModal,    setPayModal]     = useState(null) // { student, due }
+  const [payModal,    setPayModal]     = useState(null)
 
-  // Search student by name/email
   const { data: allStudents = [] } = useQuery({
     queryKey: ['all-students-list'],
     queryFn:  () => api.get('/students').then(r => r.data),
@@ -172,7 +172,23 @@ export default function FeeCollection() {
     enabled:  !!studentId,
   })
 
-  const selectedStudent = allStudents.find(s => s.id === studentId)
+  const handleDownloadReceipt = async (receiptNo) => {
+    try {
+      const res = await downloadReceipt(receiptNo)
+      triggerPDFDownload(res, `receipt-${receiptNo}.pdf`)
+    } catch {
+      alert('Failed to download receipt.')
+    }
+  }
+
+  const handleDownloadInvoice = async (sId, studentName) => {
+    try {
+      const res = await downloadInvoice(sId)
+      triggerPDFDownload(res, `invoice-${studentName.replace(/\s+/g,'_')}.pdf`)
+    } catch {
+      alert('Failed to download invoice.')
+    }
+  }
 
   return (
     <div className="p-6 max-w-5xl">
@@ -213,10 +229,10 @@ export default function FeeCollection() {
             {/* Summary */}
             <div className="grid grid-cols-4 gap-4 mb-6">
               {[
-                { label: 'Total Due',     value: `₹${feeStatus.summary.total_due.toLocaleString('en-IN')}`,     color: 'text-gray-800' },
-                { label: 'Total Paid',    value: `₹${feeStatus.summary.total_paid.toLocaleString('en-IN')}`,    color: 'text-green-600' },
-                { label: 'Balance',       value: `₹${feeStatus.summary.total_balance.toLocaleString('en-IN')}`, color: feeStatus.summary.total_balance > 0 ? 'text-red-500' : 'text-green-600' },
-                { label: 'Status',        value: feeStatus.summary.status,                                       color: '' },
+                { label: 'Total Due',  value: `₹${feeStatus.summary.total_due.toLocaleString('en-IN')}`,     color: 'text-gray-800' },
+                { label: 'Total Paid', value: `₹${feeStatus.summary.total_paid.toLocaleString('en-IN')}`,    color: 'text-green-600' },
+                { label: 'Balance',    value: `₹${feeStatus.summary.total_balance.toLocaleString('en-IN')}`, color: feeStatus.summary.total_balance > 0 ? 'text-red-500' : 'text-green-600' },
+                { label: 'Status',     value: feeStatus.summary.status,                                       color: '' },
               ].map(s => (
                 <div key={s.label} className="bg-white border border-gray-200 rounded-xl p-4">
                   <p className="text-xs text-gray-500">{s.label}</p>
@@ -281,7 +297,15 @@ export default function FeeCollection() {
             {/* Payment History */}
             {feeStatus.payments.length > 0 && (
               <>
-                <h2 className="text-sm font-semibold text-gray-700 mb-3">Payment History</h2>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm font-semibold text-gray-700">Payment History</h2>
+                  <button
+                    onClick={() => handleDownloadInvoice(studentId, feeStatus.student.name)}
+                    className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1"
+                  >
+                    ⬇ Download Full Invoice
+                  </button>
+                </div>
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
@@ -291,6 +315,7 @@ export default function FeeCollection() {
                         <th className="text-left px-5 py-3">Date</th>
                         <th className="text-left px-5 py-3">Method</th>
                         <th className="text-right px-5 py-3">Amount</th>
+                        <th className="text-center px-5 py-3">Receipt</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -308,6 +333,14 @@ export default function FeeCollection() {
                           </td>
                           <td className="px-5 py-3 text-right font-semibold text-green-600">
                             ₹{parseFloat(p.amount).toLocaleString('en-IN')}
+                          </td>
+                          <td className="px-5 py-3 text-center">
+                            <button
+                              onClick={() => handleDownloadReceipt(p.receipt_no)}
+                              className="text-xs px-3 py-1 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50"
+                            >
+                              ⬇ Receipt
+                            </button>
                           </td>
                         </tr>
                       ))}
