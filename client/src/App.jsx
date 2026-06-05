@@ -15,6 +15,10 @@ import MyAttendance from "./pages/student/MyAttendance";
 import Exams from "./pages/admin/Exams";
 import EnterMarks from "./pages/teacher/EnterMarks";
 import MyResults from "./pages/student/MyResults";
+import FeeStructure from "./pages/admin/FeeStructure";
+import FeeCollection from "./pages/admin/FeeCollection";
+import OutstandingDues from "./pages/admin/OutstandingDues";
+import MyFees from "./pages/student/MyFees";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +53,15 @@ export default function App() {
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/timetable" element={<TimetableBuilder />} />
               <Route path="/admin/exams" element={<Exams />} />
+              <Route path="/admin/fees/structure" element={<FeeStructure />} />
+              <Route
+                path="/admin/fees/collection"
+                element={<FeeCollection />}
+              />
+              <Route
+                path="/admin/fees/outstanding"
+                element={<OutstandingDues />}
+              />
             </Route>
 
             {/* Teacher only */}
@@ -79,7 +92,7 @@ export default function App() {
               />
               <Route path="/student/attendance" element={<MyAttendance />} />
               <Route path="/student/results" element={<MyResults />} />
-
+              <Route path="/student/fees" element={<MyFees />} />
             </Route>
 
             {/* Parent only */}
