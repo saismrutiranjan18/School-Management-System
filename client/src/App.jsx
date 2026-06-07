@@ -26,6 +26,9 @@ import TeacherAnnouncements from './pages/teacher/Announcements'
 import StudentNoticeBoard   from './pages/student/NoticBoard'
 import ParentNoticeBoard    from './pages/parent/NoticeBoard'
 import { SocketProvider } from './context/SocketContext'
+import MessagingPage from './pages/shared/MessagingPage'
+import CalendarPage from './pages/shared/CalendarPage'
+
 
 const queryClient = new QueryClient();
 
@@ -77,6 +80,9 @@ export default function App() {
                 element={<FinancialReport />}
               />
               <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+              <Route path="/admin/messages"   element={<MessagingPage />} />
+              <Route path="/admin/calendar"   element={<CalendarPage />} />
+
 
             </Route>
 
@@ -98,6 +104,9 @@ export default function App() {
               />
               <Route path="/teacher/marks" element={<EnterMarks />} />
               <Route path="/teacher/announcements" element={<TeacherAnnouncements />} />
+              <Route path="/teacher/messages" element={<MessagingPage />} />
+              <Route path="/teacher/calendar" element={<CalendarPage />} />
+
 
             </Route>
 
@@ -112,6 +121,9 @@ export default function App() {
               <Route path="/student/results" element={<MyResults />} />
               <Route path="/student/fees" element={<MyFees />} />
               <Route path="/student/notices" element={<StudentNoticeBoard />} />
+              <Route path="/student/messages" element={<MessagingPage />} />
+              <Route path="/student/calendar" element={<CalendarPage />} />
+
 
             </Route>
 
@@ -119,6 +131,9 @@ export default function App() {
             <Route element={<ProtectedRoute allowedRoles={["parent"]} />}>
               <Route path="/parent/dashboard" element={<ParentDashboard />} />
               <Route path="/parent/notices" element={<ParentNoticeBoard />} />
+              <Route path="/parent/messages"  element={<MessagingPage />} />
+              <Route path="/parent/calendar"  element={<CalendarPage />} />
+
 
             </Route>
 

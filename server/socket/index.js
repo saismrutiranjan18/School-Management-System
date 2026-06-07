@@ -29,32 +29,50 @@ const initSocket = (httpServer) => {
     }
   })
 
-  // ── Connection Handler ──────────────────────────────────────────────
-  io.on('connection', (socket) => {
-    const { id, role, email } = socket.user
+// ── Connection Handler ──────────────────────────────────────────────
+io.on('connection', (socket) => {
+  const { id, role, email } = socket.user
+  console.log(`🔌 Socket connected: ${email} [${role}] — ${socket.id}`)
 
-    console.log(`🔌 Socket connected: ${email} [${role}] — ${socket.id}`)
+  socket.join(`user:${id}`)
+  socket.join(`role:${role}`)
+  socket.join('role:all')
 
-    // Each user joins:
-    // 1. Their personal room  → "user:<id>"        (private alerts)
-    // 2. Their role room      → "role:<role>"       (role broadcasts)
-    // 3. The global room      → "role:all"          (school-wide)
-    socket.join(`user:${id}`)
-    socket.join(`role:${role}`)
-    socket.join('role:all')
+  socket.emit('connected', {
+    message: `Connected as ${role}`,
+    rooms:   [`user:${id}`, `role:${role}`, 'role:all'],
+  })
 
-    // Confirm to client which rooms they're in
-    socket.emit('connected', {
-      message: `Connected as ${role}`,
-      rooms:   [`user:${id}`, `role:${role}`, 'role:all'],
-    })
+  // Allow client to join a specific conversation room for typing indicator
+  socket.on('join_conversation', ({ other_user_id }) => {
+    const roomName = [socket.user.id, other_user_id].sort().join('_')
+    socket.join(`conv:${roomName}`)
+  })
 
-    socket.on('disconnect', () => {
-      console.log(`🔌 Socket disconnected: ${email} [${role}]`)
+  socket.on('leave_conversation', ({ other_user_id }) => {
+    const roomName = [socket.user.id, other_user_id].sort().join('_')
+    socket.leave(`conv:${roomName}`)
+  })
+
+  // Typing indicator
+  socket.on('typing', ({ to_user_id }) => {
+    socket.to(`user:${to_user_id}`).emit('user_typing', {
+      from_user_id: socket.user.id,
+      from_name:    socket.user.email,
     })
   })
 
-  return io
+  socket.on('stop_typing', ({ to_user_id }) => {
+    socket.to(`user:${to_user_id}`).emit('user_stop_typing', {
+      from_user_id: socket.user.id,
+    })
+  })
+
+  socket.on('disconnect', () => {
+    console.log(`🔌 Socket disconnected: ${email} [${role}]`)
+  })
+})
+return io
 }
 
 // Call this anywhere in controllers to emit events

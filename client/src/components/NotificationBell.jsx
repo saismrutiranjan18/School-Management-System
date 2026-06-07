@@ -7,6 +7,8 @@ const TYPE_STYLES = {
   absence:      { icon: '⚠️', color: 'text-red-600',   bg: 'bg-red-50'   },
   fee_payment:  { icon: '💰', color: 'text-green-600', bg: 'bg-green-50' },
   default:      { icon: '🔔', color: 'text-gray-600',  bg: 'bg-gray-50'  },
+  message: { icon: '💬', color: 'text-blue-600', bg: 'bg-blue-50' },
+
 }
 
 const PRIORITY_DOT = {

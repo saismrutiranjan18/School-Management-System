@@ -14,6 +14,10 @@ const ADMIN_LINKS = [
   { to: '/admin/financial-report', label: 'Finance Report',   icon: '📊' },
   { to: '/admin/expenses',         label: 'Expenses',         icon: '💸' },
   { to: '/admin/announcements',    label: 'Announcements',    icon: '📢' },
+  { to: '/admin/messages',   label: 'Messages', icon: '💬' },
+  { to: '/admin/calendar',   label: 'Calendar', icon: '📅' },
+
+
 ]
 
 const TEACHER_LINKS = [
@@ -23,6 +27,10 @@ const TEACHER_LINKS = [
   { to: '/teacher/attendance/report',  label: 'Att. Report',   icon: '📋' },
   { to: '/teacher/marks',              label: 'Enter Marks',   icon: '📝' },
   { to: '/teacher/announcements',      label: 'Notices',       icon: '📢' },
+  { to: '/teacher/messages', label: 'Messages', icon: '💬' },
+  { to: '/teacher/calendar', label: 'Calendar', icon: '📅' },
+
+
 ]
 
 const STUDENT_LINKS = [
@@ -32,11 +40,18 @@ const STUDENT_LINKS = [
   { to: '/student/results',    label: 'My Results', icon: '📝' },
   { to: '/student/fees',       label: 'My Fees',    icon: '💰' },
   { to: '/student/notices',    label: 'Notices',    icon: '📢' },
+  { to: '/student/messages', label: 'Messages', icon: '💬' },
+  { to: '/student/calendar', label: 'Calendar', icon: '📅' },
+
+
 ]
 
 const PARENT_LINKS = [
   { to: '/parent/dashboard', label: 'Dashboard', icon: '🏠' },
   { to: '/parent/notices',   label: 'Notices',   icon: '📢' },
+  { to: '/parent/messages',  label: 'Messages', icon: '💬' },
+  { to: '/parent/calendar',  label: 'Calendar', icon: '📅' },
+
 ]
 
 const LINKS_MAP = {

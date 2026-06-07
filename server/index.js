@@ -18,6 +18,9 @@ const expenseRoutes = require('./routes/expense.routes')
 const announcementRoutes = require('./routes/announcement.routes')
 const http           = require('http')
 const { initSocket } = require('./socket')
+const messageRoutes = require('./routes/message.routes')
+const eventRoutes = require('./routes/event.routes')
+
 
 const app = express()
 
@@ -40,6 +43,8 @@ app.use('/api/marks', marksRoutes)
 app.use('/api/fees', feesRoutes)
 app.use('/api/expenses', expenseRoutes)
 app.use('/api/announcements', announcementRoutes)
+app.use('/api/messages', messageRoutes)
+app.use('/api/events', eventRoutes)
 
 
 // Health check
