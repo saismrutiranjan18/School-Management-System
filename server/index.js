@@ -20,6 +20,10 @@ const http           = require('http')
 const { initSocket } = require('./socket')
 const messageRoutes = require('./routes/message.routes')
 const eventRoutes = require('./routes/event.routes')
+const libraryRoutes = require('./routes/library.routes')
+const transportRoutes = require('./routes/transport.routes')
+const analyticsRoutes = require('./routes/analytics.routes')
+
 
 
 const app = express()
@@ -45,6 +49,10 @@ app.use('/api/expenses', expenseRoutes)
 app.use('/api/announcements', announcementRoutes)
 app.use('/api/messages', messageRoutes)
 app.use('/api/events', eventRoutes)
+app.use('/api/library', libraryRoutes)
+app.use('/api/transport', transportRoutes)
+app.use('/api/analytics', analyticsRoutes)
+
 
 
 // Health check

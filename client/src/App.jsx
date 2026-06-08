@@ -28,21 +28,18 @@ import ParentNoticeBoard    from './pages/parent/NoticeBoard'
 import { SocketProvider } from './context/SocketContext'
 import MessagingPage from './pages/shared/MessagingPage'
 import CalendarPage from './pages/shared/CalendarPage'
+import Library   from './pages/admin/Library'
+import MyLibrary from './pages/student/MyLibrary'
+import Transport   from './pages/admin/Transport'
+import MyTransport from './pages/student/MyTransport'
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import TeacherDashboard from "./pages/teacher/TeacherDashboard";
+import StudentDashboard from "./pages/student/StudentDashboard";
+import ParentDashboard from "./pages/parent/ParentDashboard";
 
 
 const queryClient = new QueryClient();
 
-// Placeholder dashboards — replace in later phases
-const AdminDashboard = () => <h1 className="p-8 text-2xl">Admin Dashboard</h1>;
-const TeacherDashboard = () => (
-  <h1 className="p-8 text-2xl">Teacher Dashboard</h1>
-);
-const StudentDashboard = () => (
-  <h1 className="p-8 text-2xl">Student Dashboard</h1>
-);
-const ParentDashboard = () => (
-  <h1 className="p-8 text-2xl">Parent Dashboard</h1>
-);
 const Unauthorized = () => (
   <h1 className="p-8 text-2xl text-red-500">403 — Unauthorized</h1>
 );
@@ -82,6 +79,9 @@ export default function App() {
               <Route path="/admin/announcements" element={<AdminAnnouncements />} />
               <Route path="/admin/messages"   element={<MessagingPage />} />
               <Route path="/admin/calendar"   element={<CalendarPage />} />
+              <Route path="/admin/library" element={<Library />} />
+              <Route path="/admin/transport" element={<Transport />} />
+
 
 
             </Route>
@@ -123,6 +123,9 @@ export default function App() {
               <Route path="/student/notices" element={<StudentNoticeBoard />} />
               <Route path="/student/messages" element={<MessagingPage />} />
               <Route path="/student/calendar" element={<CalendarPage />} />
+              <Route path="/student/library" element={<MyLibrary />} />
+              <Route path="/student/transport" element={<MyTransport />} />
+
 
 
             </Route>
@@ -133,6 +136,8 @@ export default function App() {
               <Route path="/parent/notices" element={<ParentNoticeBoard />} />
               <Route path="/parent/messages"  element={<MessagingPage />} />
               <Route path="/parent/calendar"  element={<CalendarPage />} />
+              <Route path="/parent/transport" element={<MyTransport />} />
+
 
 
             </Route>

@@ -16,6 +16,10 @@ const ADMIN_LINKS = [
   { to: '/admin/announcements',    label: 'Announcements',    icon: '📢' },
   { to: '/admin/messages',   label: 'Messages', icon: '💬' },
   { to: '/admin/calendar',   label: 'Calendar', icon: '📅' },
+  { to: '/admin/library',   label: 'Library', icon: '📚' },
+  { to: '/admin/transport',   label: 'Transport', icon: '🚌' },
+
+
 
 
 ]
@@ -42,6 +46,8 @@ const STUDENT_LINKS = [
   { to: '/student/notices',    label: 'Notices',    icon: '📢' },
   { to: '/student/messages', label: 'Messages', icon: '💬' },
   { to: '/student/calendar', label: 'Calendar', icon: '📅' },
+  { to: '/student/library', label: 'Library', icon: '📚' },
+  { to: '/student/transport', label: 'Transport', icon: '🚌' },
 
 
 ]
@@ -51,6 +57,8 @@ const PARENT_LINKS = [
   { to: '/parent/notices',   label: 'Notices',   icon: '📢' },
   { to: '/parent/messages',  label: 'Messages', icon: '💬' },
   { to: '/parent/calendar',  label: 'Calendar', icon: '📅' },
+  { to: '/parent/transport',  label: 'Transport', icon: '🚌' },
+
 
 ]
 
