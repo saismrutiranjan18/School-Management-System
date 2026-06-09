@@ -69,7 +69,10 @@ app.use('/api/library', libraryRoutes)
 app.use('/api/transport', transportRoutes)
 app.use('/api/analytics', analyticsRoutes)
 
-
+// Add a basic health check route
+app.get('/', (req, res) => {
+  res.status(200).send('SMS Server is running successfully!');
+});
 
 // Health check
 app.get('/api/health', (req, res) => {
