@@ -2,6 +2,8 @@ const express = require('express')
 const router = express.Router()
 const { protect, authorizeRoles } = require('../middleware/auth.middleware')
 const pool = require('../config/db')
+const upload = require('../middleware/upload.middleware')
+
 
 // GET /api/students  (admin + teacher only)
 router.get('/', protect, authorizeRoles('admin', 'teacher'), async (req, res) => {
@@ -80,6 +82,27 @@ router.post('/', protect, authorizeRoles('admin'), async (req, res) => {
     client.release()
   }
 })
+
+router.post('/:id/photo',
+  protect,
+  authorizeRoles('admin'),
+  upload.single('photo'),
+  async (req, res) => {
+    try {
+      if (!req.file)
+        return res.status(400).json({ error: 'No file uploaded.' })
+
+      await pool.query(
+        'UPDATE students SET photo_url=$1 WHERE id=$2',
+        [req.file.path, req.params.id]
+      )
+
+      res.json({ photo_url: req.file.path })
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to upload photo.' })
+    }
+  }
+)
 
 // PUT /api/students/:id  (admin only)
 router.put('/:id', protect, authorizeRoles('admin'), async (req, res) => {
