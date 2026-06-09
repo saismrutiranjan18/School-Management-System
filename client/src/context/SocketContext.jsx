@@ -26,13 +26,13 @@ export const SocketProvider = ({ children }) => {
     // Don't reconnect if already connected
     if (socketRef.current?.connected) return
 
-    const socket = io('http://localhost:5000', {
-      auth:        { token },
-      transports:  ['websocket'],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay:    2000,
-    })
+    const socket = io(import.meta.env.VITE_SOCKET_URL, {
+  auth:        { token },
+  transports:  ['websocket'],
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay:    2000,
+})
 
     socket.on('connect', () => {
       console.log('🔌 Socket connected:', socket.id)
