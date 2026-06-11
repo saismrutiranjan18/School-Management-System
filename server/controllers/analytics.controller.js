@@ -1,7 +1,5 @@
 const pool = require("../config/db");
 
-// GET /api/analytics/dashboard
-// Single API call returns all dashboard data
 const getDashboard = async (req, res) => {
   const { role, id: userId } = req.user;
 
@@ -10,25 +8,21 @@ const getDashboard = async (req, res) => {
       const data = await getAdminDashboard();
       return res.json(data);
     }
-
     if (role === "teacher") {
       const data = await getTeacherDashboard(userId);
       return res.json(data);
     }
-
     if (role === "student") {
       const data = await getStudentDashboard(userId);
       return res.json(data);
     }
-
     if (role === "parent") {
       const data = await getParentDashboard(userId);
       return res.json(data);
     }
-
     res.status(403).json({ error: "Unauthorized role." });
   } catch (err) {
-    console.error(err);
+    console.error("Dashboard error:", err);
     res.status(500).json({ error: "Failed to fetch dashboard data." });
   }
 };
@@ -51,21 +45,19 @@ const getAdminDashboard = async () => {
   ] = await Promise.all([
     // ── Summary cards ──────────────────────────────────────────────
     pool.query(
-      `
-      SELECT
-        (SELECT COUNT(*) FROM students)                          AS total_students,
-        (SELECT COUNT(*) FROM teachers)                         AS total_teachers,
-        (SELECT COUNT(*) FROM classes)                          AS total_classes,
-        (SELECT COUNT(*) FROM users WHERE role='parent')        AS total_parents,
+      `SELECT
+        (SELECT COUNT(*) FROM students)                       AS total_students,
+        (SELECT COUNT(*) FROM teachers)                       AS total_teachers,
+        (SELECT COUNT(*) FROM classes)                        AS total_classes,
+        (SELECT COUNT(*) FROM users WHERE role='parent')      AS total_parents,
         (SELECT COALESCE(SUM(amount),0) FROM fee_payments
-          WHERE payment_date = CURRENT_DATE)                    AS fees_today,
+          WHERE payment_date = CURRENT_DATE)                  AS fees_today,
         (SELECT COALESCE(SUM(amount),0) FROM fee_payments
-          WHERE payment_date BETWEEN $1 AND $2)                 AS fees_this_month,
-        (SELECT COUNT(*) FROM books)                            AS total_books,
+          WHERE payment_date BETWEEN $1 AND $2)               AS fees_this_month,
+        (SELECT COUNT(*) FROM books)                          AS total_books,
         (SELECT COUNT(*) FROM book_issues
-          WHERE return_date IS NULL)                            AS books_issued
-    `,
-      [monthStart, today],
+          WHERE return_date IS NULL)                          AS books_issued`,
+      [monthStart, today]
     ),
 
     // ── Monthly fee collection (last 6 months) ─────────────────────
@@ -105,12 +97,12 @@ const getAdminDashboard = async () => {
         c.section,
         e.name   AS exam_name,
         ROUND(
-  AVG((m.marks_obtained::float / NULLIF(m.max_marks,0)) * 100)::numeric,
-  1
-) AS avg_percentage,
+          AVG((m.marks_obtained::float / NULLIF(m.max_marks,0)) * 100)::numeric,
+          1
+        ) AS avg_percentage,
         COUNT(DISTINCT m.student_id) AS student_count
       FROM marks m
-      JOIN exams e   ON m.exam_id   = e.id
+      JOIN exams e    ON m.exam_id    = e.id
       JOIN students s ON m.student_id = s.id
       JOIN classes  c ON s.class_id   = c.id
       WHERE e.id = (
@@ -121,16 +113,17 @@ const getAdminDashboard = async () => {
       ORDER BY avg_percentage DESC
     `),
 
-    // ── Toppers (top 5 students across latest exam) ────────────────
+    // ── Toppers (top 5 students in latest exam) ────────────────────
+    // FIX: was accidentally using attendance formula here
     pool.query(`
       SELECT
         u.name      AS student_name,
         c.name      AS class_name,
         c.section,
-        ROUND((
-  SUM(CASE WHEN status IN ('present','late') THEN 1 ELSE 0 END)
-  * 100.0 / NULLIF(COUNT(*),0)
-)::numeric, 1) AS percentage,
+        ROUND(
+          (SUM(m.marks_obtained)::float / NULLIF(SUM(m.max_marks), 0) * 100)::numeric,
+          1
+        ) AS percentage,
         SUM(m.marks_obtained) AS total_obtained,
         SUM(m.max_marks)      AS total_max
       FROM marks m
@@ -175,10 +168,11 @@ const getAdminDashboard = async () => {
     pool.query(`
       SELECT
         COALESCE(SUM(fp.amount), 0) AS total_collected,
-        COALESCE((
-          SELECT SUM(fs.amount) FROM fees_structure fs
-          WHERE fs.academic_year = '2024-25'
-        ) - SUM(fp.amount), 0) AS total_outstanding
+        COALESCE(
+          (SELECT SUM(fs.amount) FROM fees_structure fs
+           WHERE fs.academic_year = '2024-25') - SUM(fp.amount),
+          0
+        ) AS total_outstanding
       FROM fee_payments fp
       WHERE fp.academic_year = '2024-25'
     `),
@@ -187,7 +181,8 @@ const getAdminDashboard = async () => {
     pool.query(`
       SELECT
         (SELECT COUNT(*) FROM announcements WHERE is_active=TRUE)  AS active_announcements,
-        (SELECT COUNT(*) FROM book_issues WHERE due_date < CURRENT_DATE AND return_date IS NULL) AS overdue_books,
+        (SELECT COUNT(*) FROM book_issues
+          WHERE due_date < CURRENT_DATE AND return_date IS NULL)   AS overdue_books,
         (SELECT COUNT(*) FROM transport_routes WHERE is_active=TRUE) AS active_routes,
         (SELECT COUNT(*) FROM exams WHERE end_date >= CURRENT_DATE) AS upcoming_exams
     `),
@@ -211,49 +206,44 @@ const getAdminDashboard = async () => {
 const getTeacherDashboard = async (userId) => {
   const today = new Date().toISOString().split("T")[0];
 
-  const [
-    teacherResult,
-    classesResult,
-    attendanceTodayResult,
-    announcementsResult,
-  ] = await Promise.all([
-    pool.query("SELECT * FROM teachers WHERE user_id=$1", [userId]),
-    pool.query(
-      `
-      SELECT DISTINCT
-        c.id, c.name, c.section,
-        COUNT(s.id) AS student_count
-      FROM subjects sub
-      JOIN classes  c ON sub.class_id   = c.id
-      JOIN teachers t ON sub.teacher_id = t.id
-      LEFT JOIN students s ON s.class_id = c.id
-      WHERE t.user_id = $1
-      GROUP BY c.id, c.name, c.section
-      ORDER BY c.name
-    `,
-      [userId],
-    ),
-    pool.query(
-      `
-      SELECT
-        COUNT(*)  AS total_marked,
-        SUM(CASE WHEN status='present' THEN 1 ELSE 0 END) AS present,
-        SUM(CASE WHEN status='absent'  THEN 1 ELSE 0 END) AS absent
-      FROM attendance a
-      JOIN teachers t ON a.teacher_id = t.id
-      WHERE t.user_id = $1 AND a.date = $2
-    `,
-      [userId, today],
-    ),
-    pool.query(`
-      SELECT id, title, priority, created_at
-      FROM announcements
-      WHERE is_active = TRUE
-        AND (target_role = 'all' OR target_role = 'teacher')
-      ORDER BY created_at DESC
-      LIMIT 5
-    `),
-  ]);
+  const [teacherResult, classesResult, attendanceTodayResult, announcementsResult] =
+    await Promise.all([
+      pool.query("SELECT * FROM teachers WHERE user_id=$1", [userId]),
+
+      pool.query(
+        `SELECT DISTINCT
+          c.id, c.name, c.section,
+          COUNT(s.id) AS student_count
+        FROM subjects sub
+        JOIN classes  c ON sub.class_id   = c.id
+        JOIN teachers t ON sub.teacher_id = t.id
+        LEFT JOIN students s ON s.class_id = c.id
+        WHERE t.user_id = $1
+        GROUP BY c.id, c.name, c.section
+        ORDER BY c.name`,
+        [userId]
+      ),
+
+      pool.query(
+        `SELECT
+          COUNT(*)  AS total_marked,
+          SUM(CASE WHEN status='present' THEN 1 ELSE 0 END) AS present,
+          SUM(CASE WHEN status='absent'  THEN 1 ELSE 0 END) AS absent
+        FROM attendance a
+        JOIN teachers t ON a.teacher_id = t.id
+        WHERE t.user_id = $1 AND a.date = $2`,
+        [userId, today]
+      ),
+
+      pool.query(`
+        SELECT id, title, priority, created_at
+        FROM announcements
+        WHERE is_active = TRUE
+          AND (target_role = 'all' OR target_role = 'teacher')
+        ORDER BY created_at DESC
+        LIMIT 5
+      `),
+    ]);
 
   return {
     role: "teacher",
@@ -267,15 +257,13 @@ const getTeacherDashboard = async (userId) => {
 // ── Student Dashboard ─────────────────────────────────────────────────
 const getStudentDashboard = async (userId) => {
   const studentResult = await pool.query(
-    `
-    SELECT s.*, u.name, u.email,
-           c.name AS class_name, c.section
-    FROM students s
-    JOIN users u   ON s.user_id  = u.id
-    JOIN classes c ON s.class_id = c.id
-    WHERE s.user_id = $1
-  `,
-    [userId],
+    `SELECT s.*, u.name, u.email,
+            c.name AS class_name, c.section
+     FROM students s
+     JOIN users u   ON s.user_id  = u.id
+     JOIN classes c ON s.class_id = c.id
+     WHERE s.user_id = $1`,
+    [userId]
   );
 
   if (!studentResult.rows[0])
@@ -286,70 +274,63 @@ const getStudentDashboard = async (userId) => {
   const [attendanceResult, marksResult, feesResult, announcementsResult] =
     await Promise.all([
       pool.query(
-        `
-      SELECT
-        COUNT(*) AS total,
-        SUM(CASE WHEN status IN ('present','late') THEN 1 ELSE 0 END) AS attended,
-        ROUND((
-  SUM(CASE WHEN status IN ('present','late') THEN 1 ELSE 0 END)
-  * 100.0 / NULLIF(COUNT(*),0)
-)::numeric, 1) AS percentage
-      FROM attendance
-      WHERE student_id = $1
-        AND date >= CURRENT_DATE - INTERVAL '30 days'
-    `,
-        [student.id],
+        `SELECT
+          COUNT(*) AS total,
+          SUM(CASE WHEN status IN ('present','late') THEN 1 ELSE 0 END) AS attended,
+          ROUND(
+            SUM(CASE WHEN status IN ('present','late') THEN 1 ELSE 0 END)
+            * 100.0 / NULLIF(COUNT(*),0), 1
+          ) AS percentage
+        FROM attendance
+        WHERE student_id = $1
+          AND date >= CURRENT_DATE - INTERVAL '30 days'`,
+        [student.id]
       ),
 
       pool.query(
-        `
-      SELECT
-        e.name AS exam_name,
-        ROUND((
-  SUM(m.marks_obtained) * 100.0 /
-  NULLIF(SUM(m.max_marks), 0)
-)::numeric, 1) AS percentage
-      FROM marks m
-      JOIN exams e ON m.exam_id = e.id
-      WHERE m.student_id = $1
-        AND m.is_absent = FALSE
-        AND e.is_published = TRUE
-      GROUP BY e.name, e.id
-      ORDER BY e.id DESC
-      LIMIT 3
-    `,
-        [student.id],
+        `SELECT
+          e.name AS exam_name,
+          ROUND(
+            (SUM(m.marks_obtained) * 100.0 / NULLIF(SUM(m.max_marks), 0))::numeric,
+            1
+          ) AS percentage
+        FROM marks m
+        JOIN exams e ON m.exam_id = e.id
+        WHERE m.student_id = $1
+          AND m.is_absent = FALSE
+          AND e.is_published = TRUE
+        GROUP BY e.name, e.id
+        ORDER BY e.id DESC
+        LIMIT 3`,
+        [student.id]
       ),
 
       pool.query(
-        `
-      SELECT
-        COALESCE(SUM(fp.amount),0) AS paid,
-        COALESCE((
-          SELECT SUM(fs.amount) FROM fees_structure fs
-          WHERE fs.class_id = $2
-        ) - SUM(fp.amount), 0) AS balance
-      FROM fee_payments fp
-      WHERE fp.student_id = $1
-        AND fp.academic_year = '2024-25'
-    `,
-        [student.id, student.class_id],
+        `SELECT
+          COALESCE(SUM(fp.amount),0) AS paid,
+          COALESCE(
+            (SELECT SUM(fs.amount) FROM fees_structure fs
+             WHERE fs.class_id = $2) - SUM(fp.amount),
+            0
+          ) AS balance
+        FROM fee_payments fp
+        WHERE fp.student_id = $1
+          AND fp.academic_year = '2024-25'`,
+        [student.id, student.class_id]
       ),
 
       pool.query(
-        `
-      SELECT id, title, priority, created_at
-      FROM announcements
-      WHERE is_active = TRUE
-        AND (
-          target_role = 'all'
-          OR target_role = 'student'
-          OR (target_class = $1 AND target_role = 'student')
-        )
-      ORDER BY created_at DESC
-      LIMIT 5
-    `,
-        [student.class_id],
+        `SELECT id, title, priority, created_at
+        FROM announcements
+        WHERE is_active = TRUE
+          AND (
+            target_role = 'all'
+            OR target_role = 'student'
+            OR (target_class = $1 AND target_role = 'student')
+          )
+        ORDER BY created_at DESC
+        LIMIT 5`,
+        [student.class_id]
       ),
     ]);
 
@@ -365,23 +346,21 @@ const getStudentDashboard = async (userId) => {
 
 // ── Parent Dashboard ──────────────────────────────────────────────────
 const getParentDashboard = async (userId) => {
-  const userResult = await pool.query("SELECT email FROM users WHERE id=$1", [
-    userId,
-  ]);
+  const userResult = await pool.query(
+    "SELECT email FROM users WHERE id=$1", [userId]
+  );
   if (!userResult.rows[0]) return { role: "parent", error: "User not found" };
 
   const parentEmail = userResult.rows[0].email;
 
   const studentResult = await pool.query(
-    `
-    SELECT s.*, u.name, c.name AS class_name, c.section
-    FROM students s
-    JOIN users u   ON s.user_id  = u.id
-    JOIN classes c ON s.class_id = c.id
-    WHERE s.guardian_email = $1
-    LIMIT 1
-  `,
-    [parentEmail],
+    `SELECT s.*, u.name, c.name AS class_name, c.section
+     FROM students s
+     JOIN users u   ON s.user_id  = u.id
+     JOIN classes c ON s.class_id = c.id
+     WHERE s.guardian_email = $1
+     LIMIT 1`,
+    [parentEmail]
   );
 
   if (!studentResult.rows[0]) return { role: "parent", child: null };
