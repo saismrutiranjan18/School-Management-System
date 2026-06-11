@@ -2,57 +2,49 @@ const pool       = require('../config/db')
 const { getIO }  = require('../socket')
 
 // ── GET /api/messages/conversations ──────────────────────────────────
-// Returns inbox: one entry per conversation, with latest message + unread count
 const getConversations = async (req, res) => {
   const userId = req.user.id
 
   try {
     const result = await pool.query(`
-      SELECT
-        -- The other person in the conversation
-        CASE
-          WHEN m.sender_id   = $1 THEN m.receiver_id
-          ELSE m.sender_id
-        END                         AS other_user_id,
-        u.name                      AS other_user_name,
-        u.role                      AS other_user_role,
-
-        -- Latest message snippet
-        m.content                   AS last_message,
-        m.sent_at                   AS last_message_at,
-        m.sender_id                 AS last_sender_id,
-
-        -- Unread count (messages sent TO me that I haven't read)
-        COUNT(unread.id)            AS unread_count
-
-      FROM messages m
-      JOIN users u ON u.id = CASE
-          WHEN m.sender_id   = $1 THEN m.receiver_id
+      SELECT DISTINCT ON (other_user_id)
+        other_user_id,
+        other_user_name,
+        other_user_role,
+        last_message,
+        last_message_at,
+        last_sender_id,
+        unread_count
+      FROM (
+        SELECT
+          CASE
+            WHEN m.sender_id = $1 THEN m.receiver_id
+            ELSE m.sender_id
+          END                                   AS other_user_id,
+          u.name                                AS other_user_name,
+          u.role                                AS other_user_role,
+          m.content                             AS last_message,
+          m.sent_at                             AS last_message_at,
+          m.sender_id                           AS last_sender_id,
+          (
+            SELECT COUNT(*)
+            FROM messages unread
+            WHERE unread.sender_id = CASE
+                WHEN m.sender_id = $1 THEN m.receiver_id
+                ELSE m.sender_id
+              END
+              AND unread.receiver_id = $1
+              AND unread.read_at IS NULL
+          )                                     AS unread_count
+        FROM messages m
+        JOIN users u ON u.id = CASE
+          WHEN m.sender_id = $1 THEN m.receiver_id
           ELSE m.sender_id
         END
-
-      -- Unread messages in this conversation
-      LEFT JOIN messages unread ON (
-        unread.sender_id   = u.id
-        AND unread.receiver_id = $1
-        AND unread.read_at  IS NULL
-      )
-
-      WHERE m.sender_id = $1 OR m.receiver_id = $1
-
-      GROUP BY
-        other_user_id, u.name, u.role,
-        m.content, m.sent_at, m.sender_id, m.id
-
-      -- Keep only the latest message per conversation
-      HAVING m.sent_at = (
-        SELECT MAX(m2.sent_at)
-        FROM messages m2
-        WHERE (m2.sender_id = $1 AND m2.receiver_id = u.id)
-           OR (m2.sender_id = u.id AND m2.receiver_id = $1)
-      )
-
-      ORDER BY m.sent_at DESC
+        WHERE m.sender_id = $1 OR m.receiver_id = $1
+        ORDER BY m.sent_at DESC
+      ) sub
+      ORDER BY other_user_id, last_message_at DESC
     `, [userId])
 
     res.json(result.rows)
@@ -63,15 +55,13 @@ const getConversations = async (req, res) => {
 }
 
 // ── GET /api/messages/conversation/:otherUserId ───────────────────────
-// Full message thread between logged-in user and another user
 const getThread = async (req, res) => {
-  const myId      = req.user.id
-  const otherId   = parseInt(req.params.otherUserId)
+  const myId    = req.user.id
+  const otherId = parseInt(req.params.otherUserId)
   const { page = 1, limit = 50 } = req.query
-  const offset    = (page - 1) * limit
+  const offset  = (page - 1) * limit
 
   try {
-    // Get other user info
     const otherUser = await pool.query(
       'SELECT id, name, role FROM users WHERE id = $1',
       [otherId]
@@ -79,7 +69,6 @@ const getThread = async (req, res) => {
     if (!otherUser.rows[0])
       return res.status(404).json({ error: 'User not found.' })
 
-    // Get messages
     const result = await pool.query(`
       SELECT
         m.*,
@@ -95,7 +84,7 @@ const getThread = async (req, res) => {
       LIMIT $3 OFFSET $4
     `, [myId, otherId, limit, offset])
 
-    // Mark unread messages as read
+    // Mark unread as read
     await pool.query(`
       UPDATE messages
       SET read_at = NOW()
@@ -116,7 +105,6 @@ const getThread = async (req, res) => {
 }
 
 // ── POST /api/messages ────────────────────────────────────────────────
-// Send a new message
 const sendMessage = async (req, res) => {
   const senderId = req.user.id
   const { receiver_id, content } = req.body
@@ -128,7 +116,6 @@ const sendMessage = async (req, res) => {
     return res.status(400).json({ error: 'Cannot send message to yourself.' })
 
   try {
-    // Verify receiver exists
     const receiverResult = await pool.query(
       'SELECT id, name, role FROM users WHERE id = $1 AND is_active = TRUE',
       [receiver_id]
@@ -138,7 +125,6 @@ const sendMessage = async (req, res) => {
 
     const receiver = receiverResult.rows[0]
 
-    // Insert message
     const result = await pool.query(`
       INSERT INTO messages (sender_id, receiver_id, content)
       VALUES ($1, $2, $3)
@@ -147,7 +133,6 @@ const sendMessage = async (req, res) => {
 
     const message = result.rows[0]
 
-    // Enrich with sender info for socket payload
     const senderResult = await pool.query(
       'SELECT id, name, role FROM users WHERE id = $1',
       [senderId]
@@ -159,14 +144,9 @@ const sendMessage = async (req, res) => {
       sender_role: senderResult.rows[0].role,
     }
 
-    // ── Real-time delivery via Socket.io ──────────────────────────
     try {
       const io = getIO()
-
-      // Send to receiver's personal room
       io.to(`user:${receiver_id}`).emit('new_message', enriched)
-
-      // Also send notification
       io.to(`user:${receiver_id}`).emit('notification', {
         type:       'message',
         title:      `New message from ${senderResult.rows[0].name}`,
@@ -187,10 +167,6 @@ const sendMessage = async (req, res) => {
 }
 
 // ── GET /api/messages/contacts ────────────────────────────────────────
-// Returns list of users the logged-in user can message
-// Teacher → can message parents of students in their classes
-// Parent  → can message teachers of their child's class
-// Admin   → can message everyone
 const getContacts = async (req, res) => {
   const { id: userId, role } = req.user
 
@@ -205,7 +181,6 @@ const getContacts = async (req, res) => {
       `, [userId])
 
     } else if (role === 'teacher') {
-      // Parents of students in classes this teacher teaches
       result = await pool.query(`
         SELECT DISTINCT u.id, u.name, u.role
         FROM users u
@@ -213,7 +188,7 @@ const getContacts = async (req, res) => {
         UNION
         SELECT DISTINCT pu.id, pu.name, pu.role
         FROM users pu
-        JOIN students s ON s.guardian_email = pu.email
+        JOIN students s   ON s.guardian_email = pu.email
         JOIN subjects sub ON sub.class_id = s.class_id
         JOIN teachers t   ON sub.teacher_id = t.id
         WHERE t.user_id = $1
@@ -223,7 +198,6 @@ const getContacts = async (req, res) => {
       `, [userId])
 
     } else if (role === 'parent') {
-      // Teachers of their child's class + admin
       result = await pool.query(`
         SELECT DISTINCT u.id, u.name, u.role
         FROM users u
@@ -242,7 +216,6 @@ const getContacts = async (req, res) => {
       `, [userId])
 
     } else if (role === 'student') {
-      // Students can only message teachers of their class + admin
       result = await pool.query(`
         SELECT DISTINCT u.id, u.name, u.role
         FROM users u
