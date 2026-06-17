@@ -7,11 +7,28 @@ import {
 import { fetchClasses } from '../../api/classes.api'
 import DashboardLayout from '../../components/DashboardLayout'
 
+const Icon = ({ d, size = 18, className = '' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"
+    strokeLinejoin="round" aria-hidden="true"
+    className={className} style={{ flexShrink: 0 }}>
+    {Array.isArray(d) ? d.map((p, i) => <path key={i} d={p} />) : <path d={d} />}
+  </svg>
+)
+
+const ICONS = {
+  urgent:  ['M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z','M12 9v4','M12 17h.01'],
+  high:    ['M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z','M12 9v4','M12 17h.01'],
+  normal:  ['M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9','M13.73 21a2 2 0 0 1-3.46 0'],
+  low:     ['M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9','M13.73 21a2 2 0 0 1-3.46 0'],
+  empty:   ['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z','M14 2v6h6','M16 13H8','M16 17H8','M10 9H8'],
+}
+
 const PRIORITY_STYLES = {
-  urgent: { badge: 'bg-red-100 text-red-700 border-red-200',    dot: 'bg-red-500',    label: '🚨 Urgent'  },
-  high:   { badge: 'bg-orange-100 text-orange-700 border-orange-200', dot: 'bg-orange-500', label: '⚠️ High'    },
-  normal: { badge: 'bg-blue-50 text-blue-700 border-blue-200',  dot: 'bg-blue-400',   label: '📢 Normal'  },
-  low:    { badge: 'bg-gray-100 text-gray-500 border-gray-200', dot: 'bg-gray-400',   label: '🔕 Low'     },
+  urgent: { badge: 'bg-red-100    text-red-700    border-red-200',    dot: 'bg-red-500',    icon: ICONS.urgent, iconCls: 'text-red-500',    label: 'Urgent'  },
+  high:   { badge: 'bg-orange-100 text-orange-700 border-orange-200', dot: 'bg-orange-500', icon: ICONS.high,   iconCls: 'text-orange-500', label: 'High'    },
+  normal: { badge: 'bg-blue-50    text-blue-700   border-blue-200',   dot: 'bg-blue-400',   icon: ICONS.normal, iconCls: 'text-blue-500',   label: 'Normal'  },
+  low:    { badge: 'bg-gray-100   text-gray-500   border-gray-200',   dot: 'bg-gray-400',   icon: ICONS.low,    iconCls: 'text-gray-400',   label: 'Low'     },
 }
 
 const ROLE_LABELS = {
@@ -21,6 +38,7 @@ const ROLE_LABELS = {
   parent:  'Parents',
 }
 
+/* ── Modal ── */
 function AnnouncementModal({ onClose, existing }) {
   const qc     = useQueryClient()
   const isEdit = !!existing
@@ -38,27 +56,21 @@ function AnnouncementModal({ onClose, existing }) {
 
   const { data: classes = [] } = useQuery({
     queryKey: ['classes'],
-    queryFn: fetchClasses,
+    queryFn:  fetchClasses,
   })
 
   const mutation = useMutation({
     mutationFn: (data) => isEdit
       ? updateAnnouncement(existing.id, data)
       : createAnnouncement(data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['announcements'] })
-      onClose()
-    },
-    onError: (err) => setError(err.response?.data?.error || 'Something went wrong.'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['announcements'] }); onClose() },
+    onError:   (err) => setError(err.response?.data?.error || 'Something went wrong.'),
   })
 
   const handleSubmit = (e) => {
     e.preventDefault()
     setError('')
-    mutation.mutate({
-      ...form,
-      target_class: form.target_class || null,
-    })
+    mutation.mutate({ ...form, target_class: form.target_class || null })
   }
 
   return (
@@ -75,40 +87,31 @@ function AnnouncementModal({ onClose, existing }) {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Title */}
           <div>
             <label className="text-sm font-medium text-gray-700">Title</label>
-            <input
-              value={form.title}
+            <input value={form.title}
               onChange={e => setForm({ ...form, title: e.target.value })}
-              placeholder="e.g. School closed on Friday"
-              required
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+              placeholder="e.g. School closed on Friday" required
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
 
-          {/* Body */}
           <div>
             <label className="text-sm font-medium text-gray-700">Message</label>
-            <textarea
-              value={form.body}
+            <textarea value={form.body}
               onChange={e => setForm({ ...form, body: e.target.value })}
-              placeholder="Write your announcement here..."
-              rows={4}
-              required
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            />
+              placeholder="Write your announcement here…" rows={4} required
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
           </div>
 
-          {/* Target + Priority */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium text-gray-700">Target Audience</label>
-              <select
-                value={form.target_role}
+              <select value={form.target_role}
                 onChange={e => setForm({ ...form, target_role: e.target.value })}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm
+                           focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="all">Everyone</option>
                 <option value="teacher">Teachers only</option>
                 <option value="student">Students only</option>
@@ -117,11 +120,10 @@ function AnnouncementModal({ onClose, existing }) {
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Priority</label>
-              <select
-                value={form.priority}
+              <select value={form.priority}
                 onChange={e => setForm({ ...form, priority: e.target.value })}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm
+                           focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="low">Low</option>
                 <option value="normal">Normal</option>
                 <option value="high">High</option>
@@ -130,16 +132,14 @@ function AnnouncementModal({ onClose, existing }) {
             </div>
           </div>
 
-          {/* Target class (optional) */}
           <div>
             <label className="text-sm font-medium text-gray-700">
-              Target Class <span className="text-gray-400 font-normal">(optional — leave blank for all)</span>
+              Target Class <span className="text-gray-400 font-normal">(optional)</span>
             </label>
-            <select
-              value={form.target_class}
+            <select value={form.target_class}
               onChange={e => setForm({ ...form, target_class: e.target.value })}
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">All classes</option>
               {classes.map(c => (
                 <option key={c.id} value={c.id}>{c.name} — {c.section}</option>
@@ -147,15 +147,10 @@ function AnnouncementModal({ onClose, existing }) {
             </select>
           </div>
 
-          {/* Send email toggle */}
           <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg">
-            <input
-              type="checkbox"
-              id="send_email"
-              checked={form.send_email}
+            <input type="checkbox" id="send_email" checked={form.send_email}
               onChange={e => setForm({ ...form, send_email: e.target.checked })}
-              className="mt-0.5 w-4 h-4 accent-blue-600"
-            />
+              className="mt-0.5 w-4 h-4 accent-blue-600" />
             <label htmlFor="send_email" className="text-sm text-blue-700">
               Also send email notification to target audience
               <span className="block text-xs text-blue-500 mt-0.5">
@@ -164,16 +159,11 @@ function AnnouncementModal({ onClose, existing }) {
             </label>
           </div>
 
-          {/* Active toggle (edit only) */}
           {isEdit && (
             <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="is_active"
-                checked={form.is_active}
+              <input type="checkbox" id="is_active" checked={form.is_active}
                 onChange={e => setForm({ ...form, is_active: e.target.checked })}
-                className="w-4 h-4 accent-blue-600"
-              />
+                className="w-4 h-4 accent-blue-600" />
               <label htmlFor="is_active" className="text-sm text-gray-700">
                 Active (visible to users)
               </label>
@@ -181,19 +171,14 @@ function AnnouncementModal({ onClose, existing }) {
           )}
 
           <div className="flex gap-3 pt-1">
-            <button
-              type="button" onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
-            >
+            <button type="button" onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
               Cancel
             </button>
-            <button
-              type="submit" disabled={mutation.isPending}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
-            >
-              {mutation.isPending
-                ? 'Posting...'
-                : isEdit ? 'Update' : 'Post Announcement'}
+            <button type="submit" disabled={mutation.isPending}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm
+                         hover:bg-blue-700 disabled:opacity-50">
+              {mutation.isPending ? 'Posting…' : isEdit ? 'Update' : 'Post Announcement'}
             </button>
           </div>
         </form>
@@ -202,23 +187,23 @@ function AnnouncementModal({ onClose, existing }) {
   )
 }
 
-// ── Announcement Card ──────────────────────────────────────────────────
+/* ── Announcement Card ── */
 function AnnouncementCard({ ann, onEdit, onDelete, isAdmin }) {
   const [expanded, setExpanded] = useState(false)
   const p = PRIORITY_STYLES[ann.priority] || PRIORITY_STYLES.normal
 
   return (
-    <div className={`bg-white border rounded-xl p-5 transition-all ${
-      ann.priority === 'urgent'
-        ? 'border-red-200 shadow-sm'
-        : ann.priority === 'high'
-          ? 'border-orange-200'
-          : 'border-gray-200'
-    }`}>
+    <div className={`bg-white border rounded-xl p-5 transition-all
+      ${ann.priority === 'urgent' ? 'border-red-200 shadow-sm'
+        : ann.priority === 'high'  ? 'border-orange-200'
+        : 'border-gray-200'}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 flex-1 min-w-0">
-          {/* Priority dot */}
-          <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${p.dot}`} />
+
+          {/* priority icon */}
+          <div className={`mt-1 shrink-0 ${p.iconCls}`}>
+            <Icon d={p.icon} size={16} />
+          </div>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -246,18 +231,14 @@ function AnnouncementCard({ ann, onEdit, onDelete, isAdmin }) {
             </p>
 
             {ann.body.length > 120 && (
-              <button
-                onClick={() => setExpanded(!expanded)}
-                className="text-xs text-blue-500 mt-1 hover:underline"
-              >
+              <button onClick={() => setExpanded(!expanded)}
+                className="text-xs text-blue-500 mt-1 hover:underline">
                 {expanded ? 'Show less' : 'Read more'}
               </button>
             )}
 
             <div className="flex items-center gap-3 mt-2">
-              <span className="text-xs text-gray-400">
-                By {ann.created_by_name || 'Admin'}
-              </span>
+              <span className="text-xs text-gray-400">By {ann.created_by_name || 'Admin'}</span>
               <span className="text-gray-300 text-xs">·</span>
               <span className="text-xs text-gray-400">
                 {new Date(ann.created_at).toLocaleDateString('en-IN', {
@@ -268,19 +249,14 @@ function AnnouncementCard({ ann, onEdit, onDelete, isAdmin }) {
           </div>
         </div>
 
-        {/* Actions */}
         {isAdmin && (
           <div className="flex gap-2 shrink-0">
-            <button
-              onClick={() => onEdit(ann)}
-              className="text-xs px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
+            <button onClick={() => onEdit(ann)}
+              className="text-xs px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50">
               Edit
             </button>
-            <button
-              onClick={() => onDelete(ann.id)}
-              className="text-xs px-3 py-1 border border-red-200 text-red-500 rounded-lg hover:bg-red-50"
-            >
+            <button onClick={() => onDelete(ann.id)}
+              className="text-xs px-3 py-1 border border-red-200 text-red-500 rounded-lg hover:bg-red-50">
               Delete
             </button>
           </div>
@@ -290,12 +266,12 @@ function AnnouncementCard({ ann, onEdit, onDelete, isAdmin }) {
   )
 }
 
-// ── Main Page ──────────────────────────────────────────────────────────
+/* ── Main Page ── */
 export default function Announcements() {
   const qc = useQueryClient()
-  const [modal,       setModal]       = useState(null)
-  const [filterRole,  setFilterRole]  = useState('')
-  const [filterPriority, setFilterPriority] = useState('')
+  const [modal,           setModal]           = useState(null)
+  const [filterRole,      setFilterRole]      = useState('')
+  const [filterPriority,  setFilterPriority]  = useState('')
 
   const { data: announcements = [], isLoading } = useQuery({
     queryKey: ['announcements'],
@@ -309,8 +285,7 @@ export default function Announcements() {
   })
 
   const handleDelete = (id) => {
-    if (confirm('Delete this announcement?'))
-      deleteMutation.mutate(id)
+    if (confirm('Delete this announcement?')) deleteMutation.mutate(id)
   }
 
   const filtered = announcements.filter(a => {
@@ -322,92 +297,85 @@ export default function Announcements() {
   const urgentCount = announcements.filter(a => a.priority === 'urgent').length
 
   return (
-  <DashboardLayout title="Announcements">
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-800">Announcements</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Manage school-wide notices and alerts</p>
-        </div>
-        <button
-          onClick={() => setModal('add')}
-          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
-        >
-          + New Announcement
-        </button>
-      </div>
+    <DashboardLayout title="Announcements">
+      <div className="p-6">
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        {[
-          { label: 'Total',   value: announcements.length,                         color: 'text-gray-800'  },
-          { label: 'Urgent',  value: urgentCount,                                  color: 'text-red-600'   },
-          { label: 'Active',  value: announcements.filter(a => a.is_active).length, color: 'text-green-600' },
-          { label: 'Hidden',  value: announcements.filter(a => !a.is_active).length, color: 'text-gray-400' },
-        ].map(s => (
-          <div key={s.label} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-            <p className="text-xs text-gray-500">{s.label}</p>
-            <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-800">Announcements</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Manage school-wide notices and alerts</p>
           </div>
-        ))}
-      </div>
+          <button onClick={() => setModal('add')}
+            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+            + New Announcement
+          </button>
+        </div>
 
-      {/* Filters */}
-      <div className="flex gap-3 mb-5 flex-wrap">
-        <select
-          value={filterRole}
-          onChange={e => setFilterRole(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">All Audiences</option>
-          <option value="all">Everyone</option>
-          <option value="teacher">Teachers</option>
-          <option value="student">Students</option>
-          <option value="parent">Parents</option>
-        </select>
-
-        <select
-          value={filterPriority}
-          onChange={e => setFilterPriority(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">All Priorities</option>
-          <option value="urgent">Urgent</option>
-          <option value="high">High</option>
-          <option value="normal">Normal</option>
-          <option value="low">Low</option>
-        </select>
-      </div>
-
-      {/* List */}
-      {isLoading ? (
-        <p className="text-gray-400 text-sm text-center py-16">Loading announcements...</p>
-      ) : filtered.length === 0 ? (
-        <p className="text-gray-400 text-sm text-center py-16">
-          No announcements found.
-        </p>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map(ann => (
-            <AnnouncementCard
-              key={ann.id}
-              ann={ann}
-              isAdmin={true}
-              onEdit={setModal}
-              onDelete={handleDelete}
-            />
+        {/* Stats */}
+        <div className="grid grid-cols-4 gap-4 mb-6">
+          {[
+            { label: 'Total',  value: announcements.length,                          color: 'text-gray-800'  },
+            { label: 'Urgent', value: urgentCount,                                   color: 'text-red-600'   },
+            { label: 'Active', value: announcements.filter(a => a.is_active).length, color: 'text-green-600' },
+            { label: 'Hidden', value: announcements.filter(a => !a.is_active).length,color: 'text-gray-400'  },
+          ].map(s => (
+            <div key={s.label} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+              <p className="text-xs text-gray-500">{s.label}</p>
+              <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
+            </div>
           ))}
         </div>
-      )}
 
-      {modal && (
-        <AnnouncementModal
-          onClose={() => setModal(null)}
-          existing={modal === 'add' ? null : modal}
-        />
-      )}
-    </div>
-  </DashboardLayout>
-)
+        {/* Filters */}
+        <div className="flex gap-3 mb-5 flex-wrap">
+          <select value={filterRole} onChange={e => setFilterRole(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm
+                       focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">All Audiences</option>
+            <option value="all">Everyone</option>
+            <option value="teacher">Teachers</option>
+            <option value="student">Students</option>
+            <option value="parent">Parents</option>
+          </select>
+
+          <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm
+                       focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">All Priorities</option>
+            <option value="urgent">Urgent</option>
+            <option value="high">High</option>
+            <option value="normal">Normal</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+
+        {/* List */}
+        {isLoading ? (
+          <p className="text-gray-400 text-sm text-center py-16">Loading announcements…</p>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="flex justify-center mb-3 text-gray-300">
+              <Icon d={ICONS.empty} size={48} />
+            </div>
+            <p className="text-gray-400 text-sm">No announcements found.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map(ann => (
+              <AnnouncementCard key={ann.id} ann={ann} isAdmin={true}
+                onEdit={setModal} onDelete={handleDelete} />
+            ))}
+          </div>
+        )}
+
+        {modal && (
+          <AnnouncementModal
+            onClose={() => setModal(null)}
+            existing={modal === 'add' ? null : modal}
+          />
+        )}
+      </div>
+    </DashboardLayout>
+  )
 }
