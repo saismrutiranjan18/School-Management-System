@@ -7,10 +7,32 @@ import {
 } from '../../api/messages.api'
 import { useSocket } from '../../context/SocketContext'
 
+/* ── SVG helper ── */
+const Icon = ({ d, size = 18, className = '' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"
+    strokeLinejoin="round" aria-hidden="true"
+    className={className} style={{ flexShrink: 0 }}>
+    {Array.isArray(d) ? d.map((p, i) => <path key={i} d={p} />) : <path d={d} />}
+  </svg>
+)
+
+const ICONS = {
+  chat:     ['M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'],
+  send:     ['M22 2 11 13','M22 2 15 22 11 13 2 9l20-7z'],
+  plus:     ['M12 5v14','M5 12h14'],
+  search:   ['M21 21l-4.35-4.35','M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z'],
+  close:    ['M18 6 6 18','M6 6l12 12'],
+  wave:     ['M7.76 2.24a6 6 0 1 1 8.48 8.48L12 15l-4.24-4.28a6 6 0 0 1 0-8.48z','M12 15v7'],
+  user:     ['M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2','M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'],
+  newMsg:   ['M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z','M12 8v4','M12 16h.01'],
+  inbox:    ['M22 12h-4l-3 9L9 3l-3 9H2'],
+}
+
 const ROLE_COLORS = {
   admin:   'bg-purple-100 text-purple-700',
-  teacher: 'bg-blue-100 text-blue-700',
-  student: 'bg-green-100 text-green-700',
+  teacher: 'bg-blue-100   text-blue-700',
+  student: 'bg-green-100  text-green-700',
   parent:  'bg-orange-100 text-orange-700',
 }
 
@@ -22,11 +44,14 @@ function timeLabel(dateStr) {
   const mins = Math.floor(diff / 60000)
   if (mins < 1)   return 'just now'
   if (mins < 60)  return `${mins}m ago`
-  if (diff < 86400000) return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+  if (diff < 86400000)
+    return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
   return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
 }
 
-// ── Conversation List (Left Panel) ────────────────────────────────────
+/* ────────────────────────────────────────────────────────────
+   Conversation List
+──────────────────────────────────────────────────────────── */
 function ConversationList({ selectedId, onSelect, onNewChat }) {
   const { user } = useSelector(state => state.auth)
   const [search, setSearch] = useState('')
@@ -34,7 +59,7 @@ function ConversationList({ selectedId, onSelect, onNewChat }) {
   const { data: conversations = [], isLoading } = useQuery({
     queryKey:    ['conversations'],
     queryFn:     fetchConversations,
-    refetchInterval: 10000,  // poll every 10s as fallback
+    refetchInterval: 10000,
   })
 
   const filtered = conversations.filter(c =>
@@ -47,40 +72,52 @@ function ConversationList({ selectedId, onSelect, onNewChat }) {
 
   return (
     <div className="w-72 shrink-0 border-r border-gray-200 flex flex-col h-full">
+
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-gray-800">Messages</h2>
             {totalUnread > 0 && (
-              <span className="px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full font-medium">
+              <span className="px-1.5 py-0.5 bg-red-500 text-white text-xs
+                               rounded-full font-medium">
                 {totalUnread}
               </span>
             )}
           </div>
           <button
             onClick={onNewChat}
-            className="w-7 h-7 bg-blue-600 text-white rounded-lg text-lg flex items-center justify-center hover:bg-blue-700"
+            className="w-7 h-7 bg-blue-600 text-white rounded-lg flex items-center
+                       justify-center hover:bg-blue-700 transition-colors"
             title="New message"
           >
-            +
+            <Icon d={ICONS.plus} size={16} />
           </button>
         </div>
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search conversations..."
-          className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+
+        {/* Search */}
+        <div className="relative">
+          <Icon d={ICONS.search} size={14}
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search conversations…"
+            className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg
+                       text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
       </div>
 
       {/* List */}
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
-          <p className="text-xs text-gray-400 text-center py-8">Loading...</p>
+          <p className="text-xs text-gray-400 text-center py-8">Loading…</p>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-3xl mb-2">💬</p>
+          <div className="text-center py-12 px-4">
+            <div className="flex justify-center mb-2 text-gray-300">
+              <Icon d={ICONS.inbox} size={36} />
+            </div>
             <p className="text-xs text-gray-400">No conversations yet</p>
             <button
               onClick={onNewChat}
@@ -100,18 +137,22 @@ function ConversationList({ selectedId, onSelect, onNewChat }) {
                 key={conv.other_user_id}
                 onClick={() => onSelect(conv.other_user_id, conv.other_user_name, conv.other_user_role)}
                 className={`w-full text-left px-4 py-3 border-b border-gray-50 transition-all
-                  ${isSelected ? 'bg-blue-50 border-l-2 border-l-blue-500' : 'hover:bg-gray-50'}`}
+                  ${isSelected
+                    ? 'bg-blue-50 border-l-2 border-l-blue-500'
+                    : 'hover:bg-gray-50'}`}
               >
                 <div className="flex items-start gap-3">
                   {/* Avatar */}
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0
-                    ${ROLE_COLORS[conv.other_user_role]}`}>
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center
+                                   text-sm font-bold shrink-0
+                                   ${ROLE_COLORS[conv.other_user_role]}`}>
                     {conv.other_user_name?.[0]?.toUpperCase()}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
-                      <p className={`text-xs font-semibold truncate ${isSelected ? 'text-blue-700' : 'text-gray-800'}`}>
+                      <p className={`text-xs font-semibold truncate
+                        ${isSelected ? 'text-blue-700' : 'text-gray-800'}`}>
                         {conv.other_user_name}
                       </p>
                       <span className="text-xs text-gray-400 shrink-0 ml-1">
@@ -120,18 +161,20 @@ function ConversationList({ selectedId, onSelect, onNewChat }) {
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <p className={`text-xs truncate ${unread > 0 ? 'font-medium text-gray-800' : 'text-gray-500'}`}>
+                      <p className={`text-xs truncate
+                        ${unread > 0 ? 'font-medium text-gray-800' : 'text-gray-500'}`}>
                         {isMine ? 'You: ' : ''}{conv.last_message}
                       </p>
                       {unread > 0 && (
-                        <span className="ml-1 px-1.5 py-0.5 bg-blue-600 text-white text-xs rounded-full font-medium shrink-0">
+                        <span className="ml-1 px-1.5 py-0.5 bg-blue-600 text-white
+                                         text-xs rounded-full font-medium shrink-0">
                           {unread}
                         </span>
                       )}
                     </div>
 
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full capitalize mt-1 inline-block
-                      ${ROLE_COLORS[conv.other_user_role]}`}>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full capitalize
+                                      mt-1 inline-block ${ROLE_COLORS[conv.other_user_role]}`}>
                       {conv.other_user_role}
                     </span>
                   </div>
@@ -145,7 +188,9 @@ function ConversationList({ selectedId, onSelect, onNewChat }) {
   )
 }
 
-// ── New Chat Modal ─────────────────────────────────────────────────────
+/* ────────────────────────────────────────────────────────────
+   New Chat Modal
+──────────────────────────────────────────────────────────── */
 function NewChatModal({ onClose, onSelect }) {
   const [search, setSearch] = useState('')
 
@@ -161,40 +206,59 @@ function NewChatModal({ onClose, onSelect }) {
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+
         <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-800">New Message</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg text-gray-400 hover:text-gray-600
+                       hover:bg-gray-100 transition-colors"
+          >
+            <Icon d={ICONS.close} size={18} />
+          </button>
         </div>
 
         <div className="px-4 py-3">
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search contacts..."
-            autoFocus
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <div className="relative">
+            <Icon d={ICONS.search} size={14}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search contacts…"
+              autoFocus
+              className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
         </div>
 
         <div className="max-h-72 overflow-y-auto px-2 pb-3">
           {isLoading ? (
-            <p className="text-xs text-gray-400 text-center py-6">Loading contacts...</p>
+            <p className="text-xs text-gray-400 text-center py-6">Loading contacts…</p>
           ) : filtered.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-6">No contacts found.</p>
+            <div className="text-center py-6">
+              <div className="flex justify-center mb-2 text-gray-300">
+                <Icon d={ICONS.user} size={28} />
+              </div>
+              <p className="text-xs text-gray-400">No contacts found.</p>
+            </div>
           ) : (
             filtered.map(contact => (
               <button
                 key={contact.id}
                 onClick={() => { onSelect(contact.id, contact.name, contact.role); onClose() }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-left"
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
+                           hover:bg-gray-50 text-left transition-colors"
               >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
-                  ${ROLE_COLORS[contact.role]}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center
+                                 text-sm font-bold ${ROLE_COLORS[contact.role]}`}>
                   {contact.name?.[0]?.toUpperCase()}
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-800">{contact.name}</p>
-                  <p className={`text-xs px-1.5 py-0.5 rounded-full inline-block capitalize ${ROLE_COLORS[contact.role]}`}>
+                  <p className={`text-xs px-1.5 py-0.5 rounded-full inline-block
+                                 capitalize ${ROLE_COLORS[contact.role]}`}>
                     {contact.role}
                   </p>
                 </div>
@@ -207,16 +271,18 @@ function NewChatModal({ onClose, onSelect }) {
   )
 }
 
-// ── Message Thread (Right Panel) ──────────────────────────────────────
+/* ────────────────────────────────────────────────────────────
+   Message Thread
+──────────────────────────────────────────────────────────── */
 function MessageThread({ otherUserId, otherUserName, otherUserRole }) {
   const qc              = useQueryClient()
   const { user }        = useSelector(state => state.auth)
   const { socket }      = useSocket()
-  const [input, setInput]       = useState('')
-  const [isTyping, setIsTyping] = useState(false)
+  const [input, setInput]           = useState('')
+  const [isTyping, setIsTyping]     = useState(false)
   const [theyTyping, setTheyTyping] = useState(false)
-  const bottomRef       = useRef(null)
-  const typingTimer     = useRef(null)
+  const bottomRef   = useRef(null)
+  const typingTimer = useRef(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['thread', otherUserId],
@@ -227,12 +293,10 @@ function MessageThread({ otherUserId, otherUserName, otherUserRole }) {
 
   const messages = data?.messages || []
 
-  // Scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages.length])
 
-  // Socket: listen for new messages in this thread
   useEffect(() => {
     if (!socket || !otherUserId) return
 
@@ -240,8 +304,8 @@ function MessageThread({ otherUserId, otherUserName, otherUserRole }) {
 
     const handleNewMessage = (msg) => {
       if (
-        (msg.sender_id === otherUserId && msg.receiver_id === user?.id) ||
-        (msg.sender_id === user?.id    && msg.receiver_id === otherUserId)
+        (msg.sender_id === otherUserId   && msg.receiver_id === user?.id) ||
+        (msg.sender_id === user?.id      && msg.receiver_id === otherUserId)
       ) {
         qc.invalidateQueries({ queryKey: ['thread', otherUserId] })
         qc.invalidateQueries({ queryKey: ['conversations'] })
@@ -305,7 +369,7 @@ function MessageThread({ otherUserId, otherUserName, otherUserRole }) {
     }, 2000)
   }
 
-  // Group messages by date
+  /* group messages by date */
   const grouped = messages.reduce((acc, msg) => {
     const day = new Date(msg.sent_at).toLocaleDateString('en-IN', {
       day: '2-digit', month: 'long', year: 'numeric',
@@ -317,15 +381,17 @@ function MessageThread({ otherUserId, otherUserName, otherUserRole }) {
 
   return (
     <div className="flex-1 flex flex-col h-full">
+
       {/* Thread header */}
       <div className="px-5 py-3 border-b border-gray-200 bg-white flex items-center gap-3">
-        <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm
-          ${ROLE_COLORS[otherUserRole]}`}>
+        <div className={`w-9 h-9 rounded-full flex items-center justify-center
+                         font-bold text-sm ${ROLE_COLORS[otherUserRole]}`}>
           {otherUserName?.[0]?.toUpperCase()}
         </div>
         <div>
           <p className="text-sm font-semibold text-gray-800">{otherUserName}</p>
-          <span className={`text-xs px-1.5 py-0.5 rounded-full capitalize ${ROLE_COLORS[otherUserRole]}`}>
+          <span className={`text-xs px-1.5 py-0.5 rounded-full capitalize
+                            ${ROLE_COLORS[otherUserRole]}`}>
             {otherUserRole}
           </span>
         </div>
@@ -334,11 +400,15 @@ function MessageThread({ otherUserId, otherUserName, otherUserRole }) {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
         {isLoading ? (
-          <p className="text-xs text-gray-400 text-center py-8">Loading messages...</p>
+          <p className="text-xs text-gray-400 text-center py-8">Loading messages…</p>
         ) : messages.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-3xl mb-2">👋</p>
-            <p className="text-sm text-gray-400">Say hello to {otherUserName}!</p>
+            <div className="flex justify-center mb-3 text-gray-300">
+              <Icon d={ICONS.wave} size={40} />
+            </div>
+            <p className="text-sm text-gray-400">
+              Say hello to {otherUserName}!
+            </p>
           </div>
         ) : (
           Object.entries(grouped).map(([day, msgs]) => (
@@ -351,14 +421,14 @@ function MessageThread({ otherUserId, otherUserName, otherUserRole }) {
               </div>
 
               {msgs.map((msg, i) => {
-                const isMine    = msg.sender_id === user?.id
-                const showTime  = i === msgs.length - 1 ||
+                const isMine   = msg.sender_id === user?.id
+                const showTime = i === msgs.length - 1 ||
                   new Date(msgs[i+1]?.sent_at) - new Date(msg.sent_at) > 300000
 
                 return (
                   <div key={msg.id}
                     className={`flex ${isMine ? 'justify-end' : 'justify-start'} mb-1`}>
-                    <div className={`max-w-xs lg:max-w-md`}>
+                    <div className="max-w-xs lg:max-w-md">
                       <div className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed
                         ${isMine
                           ? 'bg-blue-600 text-white rounded-br-sm'
@@ -367,7 +437,8 @@ function MessageThread({ otherUserId, otherUserName, otherUserRole }) {
                       </div>
 
                       {showTime && (
-                        <div className={`flex items-center gap-1 mt-0.5 ${isMine ? 'justify-end' : ''}`}>
+                        <div className={`flex items-center gap-1 mt-0.5
+                                         ${isMine ? 'justify-end' : ''}`}>
                           <span className="text-xs text-gray-400">
                             {new Date(msg.sent_at).toLocaleTimeString('en-IN', {
                               hour: '2-digit', minute: '2-digit',
@@ -411,9 +482,10 @@ function MessageThread({ otherUserId, otherUserName, otherUserRole }) {
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder={`Message ${otherUserName}...`}
+            placeholder={`Message ${otherUserName}…`}
             rows={1}
-            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none max-h-32"
+            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-2xl text-sm
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none max-h-32"
             style={{ height: 'auto' }}
             onInput={e => {
               e.target.style.height = 'auto'
@@ -423,11 +495,11 @@ function MessageThread({ otherUserId, otherUserName, otherUserRole }) {
           <button
             onClick={handleSend}
             disabled={!input.trim() || mutation.isPending}
-            className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 disabled:opacity-40 transition shrink-0"
+            className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center
+                       justify-center hover:bg-blue-700 disabled:opacity-40
+                       transition-colors shrink-0"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 rotate-90" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-            </svg>
+            <Icon d={ICONS.send} size={16} />
           </button>
         </div>
         <p className="text-xs text-gray-400 mt-1.5 ml-1">
@@ -438,11 +510,12 @@ function MessageThread({ otherUserId, otherUserName, otherUserRole }) {
   )
 }
 
-// ── Main Messaging Page ───────────────────────────────────────────────
+/* ────────────────────────────────────────────────────────────
+   Main Page
+──────────────────────────────────────────────────────────── */
 export default function MessagingPage() {
-  const [selected,     setSelected]     = useState(null)
-  // selected = { id, name, role } | null
-  const [showNewChat,  setShowNewChat]  = useState(false)
+  const [selected,    setSelected]    = useState(null)
+  const [showNewChat, setShowNewChat] = useState(false)
 
   const handleSelectConversation = (id, name, role) => {
     setSelected({ id, name, role })
@@ -450,14 +523,13 @@ export default function MessagingPage() {
 
   return (
     <div className="flex h-[calc(100vh-56px)] bg-white">
-      {/* Left: Conversation list */}
+
       <ConversationList
         selectedId={selected?.id}
         onSelect={handleSelectConversation}
         onNewChat={() => setShowNewChat(true)}
       />
 
-      {/* Right: Thread or empty state */}
       {selected ? (
         <MessageThread
           otherUserId={selected.id}
@@ -465,20 +537,26 @@ export default function MessagingPage() {
           otherUserRole={selected.role}
         />
       ) : (
-        <div className="flex-1 flex flex-col items-center justify-center text-gray-400 bg-gray-50">
-          <p className="text-5xl mb-4">💬</p>
-          <p className="text-sm font-medium text-gray-600">Select a conversation</p>
+        <div className="flex-1 flex flex-col items-center justify-center
+                        text-gray-400 bg-gray-50">
+          <div className="mb-4 text-gray-300">
+            <Icon d={ICONS.chat} size={52} />
+          </div>
+          <p className="text-sm font-medium text-gray-600">
+            Select a conversation
+          </p>
           <p className="text-xs text-gray-400 mt-1">or start a new one</p>
           <button
             onClick={() => setShowNewChat(true)}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+            className="mt-4 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white
+                       text-sm rounded-lg hover:bg-blue-700 transition-colors"
           >
-            + New Message
+            <Icon d={ICONS.plus} size={16} />
+            New Message
           </button>
         </div>
       )}
 
-      {/* New chat modal */}
       {showNewChat && (
         <NewChatModal
           onClose={() => setShowNewChat(false)}
