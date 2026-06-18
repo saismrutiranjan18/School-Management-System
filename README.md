@@ -29,10 +29,8 @@ A full-stack web application for comprehensive school administration. Manages st
 
 The School Management System (SMS) is a production-ready web application that consolidates all core school operations into a single platform. It replaces fragmented spreadsheets and manual registers with a unified system accessible to administrators, teachers, students, and parents.
 
-The system was built as a final year project at Medicaps University, Indore, over a ten-month development timeline across five phases.
-
-**Live Application:** `https://sms-client.vercel.app`  
-**API Base URL:** `https://sms-server.onrender.com/api`
+**Live Application:** `https://school-management-system-lovat-eta.vercel.app/login`  
+**API Base URL:** `https://school-management-system-lovat-eta.vercel.app/api`
 
 ---
 
@@ -220,7 +218,12 @@ The frontend starts on `http://localhost:5173`.
 
 | Role | Email | Password |
 |---|---|---|
-| Super Admin | admin@school.com | Admin@123 |
+| Super Admin | admin@school.com | password |
+| Teacher | teacher@school.com | Test@1234 |
+| Student | student@school.com | Test@1234 |
+| Parent | parent@school.com | Test@1234 |
+
+
 
 ---
 
