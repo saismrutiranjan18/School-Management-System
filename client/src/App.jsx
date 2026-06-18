@@ -36,6 +36,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import ParentDashboard from "./pages/parent/ParentDashboard";
+import Students from "./pages/admin/Students";
 
 
 const queryClient = new QueryClient();
@@ -62,6 +63,7 @@ export default function App() {
               <Route path="/admin/timetable" element={<TimetableBuilder />} />
               <Route path="/admin/exams" element={<Exams />} />
               <Route path="/admin/fees/structure" element={<FeeStructure />} />
+              <Route path="/admin/students" element={<Students />} />
               <Route
                 path="/admin/fees/collection"
                 element={<FeeCollection />}
