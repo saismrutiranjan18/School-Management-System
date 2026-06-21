@@ -12,6 +12,8 @@ const Icon = ({ d, size = 18 }) => (
 const ICONS = {
   dashboard:    'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
   students:     ['M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2', 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'M23 21v-2a4 4 0 0 0-3-3.87', 'M16 3.13a4 4 0 0 1 0 7.75'],
+  teachers:     ['M22 10v6M2 10l10-5 10 5-10 5z', 'M6 12v5c3 3 9 3 12 0v-5'],
+  parents:      ['M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2', 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'M23 21v-2a4 4 0 0 0-3-3.87', 'M16 3.13a4 4 0 0 1 0 7.75'],
   classes:      'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10',
   subjects:     ['M4 19.5A2.5 2.5 0 0 1 6.5 17H20', 'M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'],
   timetable:    ['M8 2v4', 'M16 2v4', 'M3 10h18', 'M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6z'],
@@ -33,11 +35,14 @@ const ICONS = {
   fees:         'M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
   notices:      ['M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9', 'M13.73 21a2 2 0 0 1-3.46 0'],
   myFees:       'M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
+  profile:      ['M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2', 'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'],
 }
 
 const ADMIN_LINKS = [
   { to: '/admin/dashboard',        label: 'Dashboard',      icon: 'dashboard'     },
   { to: '/admin/students',         label: 'Students',       icon: 'students'      },
+  { to: '/admin/teachers',         label: 'Teachers',       icon: 'teachers'      },
+  { to: '/admin/parents',          label: 'Parents',        icon: 'parents'       },
   { to: '/admin/classes',          label: 'Classes',        icon: 'classes'       },
   { to: '/admin/subjects',         label: 'Subjects',       icon: 'subjects'      },
   { to: '/admin/timetable',        label: 'Timetable',      icon: 'timetable'     },
@@ -52,6 +57,7 @@ const ADMIN_LINKS = [
   { to: '/admin/calendar',         label: 'Calendar',       icon: 'calendar'      },
   { to: '/admin/library',          label: 'Library',        icon: 'library'       },
   { to: '/admin/transport',        label: 'Transport',      icon: 'transport'     },
+  { to: '/admin/profile',          label: 'My Profile',     icon: 'profile'       },
 ]
 
 const TEACHER_LINKS = [
@@ -63,6 +69,7 @@ const TEACHER_LINKS = [
   { to: '/teacher/announcements',     label: 'Notices',     icon: 'notices'       },
   { to: '/teacher/messages',          label: 'Messages',    icon: 'messages'      },
   { to: '/teacher/calendar',          label: 'Calendar',    icon: 'calendar'      },
+  { to: '/teacher/profile',           label: 'My Profile',  icon: 'profile'       },
 ]
 
 const STUDENT_LINKS = [
@@ -76,6 +83,7 @@ const STUDENT_LINKS = [
   { to: '/student/calendar',   label: 'Calendar',   icon: 'calendar'      },
   { to: '/student/library',    label: 'Library',    icon: 'library'       },
   { to: '/student/transport',  label: 'Transport',  icon: 'transport'     },
+  { to: '/student/profile',    label: 'My Profile', icon: 'profile'       },
 ]
 
 const PARENT_LINKS = [
@@ -84,6 +92,7 @@ const PARENT_LINKS = [
   { to: '/parent/messages',  label: 'Messages',  icon: 'messages'   },
   { to: '/parent/calendar',  label: 'Calendar',  icon: 'calendar'   },
   { to: '/parent/transport', label: 'Transport', icon: 'transport'  },
+  { to: '/parent/profile',   label: 'My Profile',icon: 'profile'    },
 ]
 
 const LINKS_MAP = {

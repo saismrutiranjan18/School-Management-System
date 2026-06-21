@@ -4,6 +4,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { store } from "./app/store";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import Login from "./pages/Login";
+import Students from "./pages/admin/Students";
+import Teachers from "./pages/admin/Teachers";
+import Parents from "./pages/admin/Parents";
 import Classes from "./pages/admin/Classes";
 import Subjects from "./pages/admin/Subjects";
 import TimetableBuilder from "./pages/admin/TimetableBuilder";
@@ -28,6 +31,7 @@ import ParentNoticeBoard    from './pages/parent/NoticeBoard'
 import { SocketProvider } from './context/SocketContext'
 import MessagingPage from './pages/shared/MessagingPage'
 import CalendarPage from './pages/shared/CalendarPage'
+import Profile from './pages/shared/Profile'
 import Library   from './pages/admin/Library'
 import MyLibrary from './pages/student/MyLibrary'
 import Transport   from './pages/admin/Transport'
@@ -36,7 +40,6 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import ParentDashboard from "./pages/parent/ParentDashboard";
-import Students from "./pages/admin/Students";
 
 
 const queryClient = new QueryClient();
@@ -57,13 +60,15 @@ export default function App() {
 
             {/* Admin only */}
             <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+              <Route path="/admin/students" element={<Students />} />
+              <Route path="/admin/teachers" element={<Teachers />} />
+              <Route path="/admin/parents" element={<Parents />} />
               <Route path="/admin/classes" element={<Classes />} />
               <Route path="/admin/subjects" element={<Subjects />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/timetable" element={<TimetableBuilder />} />
               <Route path="/admin/exams" element={<Exams />} />
               <Route path="/admin/fees/structure" element={<FeeStructure />} />
-              <Route path="/admin/students" element={<Students />} />
               <Route
                 path="/admin/fees/collection"
                 element={<FeeCollection />}
@@ -83,6 +88,7 @@ export default function App() {
               <Route path="/admin/calendar"   element={<CalendarPage />} />
               <Route path="/admin/library" element={<Library />} />
               <Route path="/admin/transport" element={<Transport />} />
+              <Route path="/admin/profile" element={<Profile />} />
 
 
 
@@ -108,6 +114,7 @@ export default function App() {
               <Route path="/teacher/announcements" element={<TeacherAnnouncements />} />
               <Route path="/teacher/messages" element={<MessagingPage />} />
               <Route path="/teacher/calendar" element={<CalendarPage />} />
+              <Route path="/teacher/profile" element={<Profile />} />
 
 
             </Route>
@@ -127,6 +134,7 @@ export default function App() {
               <Route path="/student/calendar" element={<CalendarPage />} />
               <Route path="/student/library" element={<MyLibrary />} />
               <Route path="/student/transport" element={<MyTransport />} />
+              <Route path="/student/profile" element={<Profile />} />
 
 
 
@@ -139,6 +147,7 @@ export default function App() {
               <Route path="/parent/messages"  element={<MessagingPage />} />
               <Route path="/parent/calendar"  element={<CalendarPage />} />
               <Route path="/parent/transport" element={<MyTransport />} />
+              <Route path="/parent/profile" element={<Profile />} />
 
 
 
