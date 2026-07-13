@@ -1,525 +1,311 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  fetchStudents,
-  createStudent,
-  updateStudent,
-  setStudentStatus,
-} from "../../api/students.api";
-import { fetchClasses } from "../../api/classes.api";
-import DashboardLayout from "../../components/DashboardLayout";
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { fetchStudents, createStudent, updateStudent, setStudentStatus } from '../../api/students.api'
+import { fetchClasses } from '../../api/classes.api'
+import DashboardLayout from '../../components/DashboardLayout'
+import DataTable from '../../components/ui/DataTable'
+import Modal from '../../components/ui/Modal'
+import Button from '../../components/ui/Button'
+import { Input, Select } from '../../components/ui/Input'
+import { StatusBadge } from '../../components/ui/Badge'
+import Card from '../../components/ui/Card'
+import { UserPlus, GraduationCap, Users, UserX, Pencil, ToggleLeft, ToggleRight, AlertCircle } from 'lucide-react'
+import { motion } from 'framer-motion'
 
-// ── Add Student Modal ─────────────────────────────────────────────────
+// ── Add Modal ─────────────────────────────────────────────────────────────────
 function AddStudentModal({ onClose }) {
-  const qc = useQueryClient();
-
+  const qc = useQueryClient()
   const [form, setForm] = useState({
-    name: "", email: "", password: "",
-    roll_no: "", class_id: "", dob: "", gender: "",
-    address: "", guardian_name: "", guardian_phone: "", guardian_email: "",
-  });
-  const [error, setError] = useState("");
-
-  const { data: classes = [] } = useQuery({
-    queryKey: ["classes"],
-    queryFn: fetchClasses,
-  });
+    name: '', email: '', password: '',
+    roll_no: '', class_id: '', dob: '', gender: '',
+    address: '', guardian_name: '', guardian_phone: '', guardian_email: '',
+  })
+  const [error, setError] = useState('')
+  const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: fetchClasses })
 
   const mutation = useMutation({
     mutationFn: createStudent,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["students"] });
-      onClose();
-    },
-    onError: (err) =>
-      setError(err.response?.data?.error || "Something went wrong."),
-  });
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['students'] }); onClose() },
+    onError: (err) => setError(err.response?.data?.error || 'Something went wrong.'),
+  })
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setError("");
-    mutation.mutate(form);
-  };
+  const f = (key) => ({ value: form[key], onChange: (e) => setForm({ ...form, [key]: e.target.value }) })
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-y-auto py-8">
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg">
-        <h2 className="text-lg font-semibold mb-4">Add New Student</h2>
-
-        {error && (
-          <p className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 p-2 rounded-lg">
-            {error}
-          </p>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Full Name</label>
-              <input
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                required
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Roll No</label>
-              <input
-                value={form.roll_no}
-                onChange={(e) => setForm({ ...form, roll_no: e.target.value })}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Login Email</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                required
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Temporary Password</label>
-              <input
-                type="text"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                required
-                placeholder="Student can change it later"
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
+    <Modal open onClose={onClose} title="Add New Student" subtitle="Create a new student account" size="md"
+      footer={<>
+        <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <Button loading={mutation.isPending} onClick={() => { setError(''); mutation.mutate(form) }}>
+          Create Student
+        </Button>
+      </>}
+    >
+      {error && (
+        <div className="flex items-center gap-2 p-3 mb-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl text-sm text-red-600 dark:text-red-400">
+          <AlertCircle size={14} className="shrink-0" />
+          {error}
+        </div>
+      )}
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <Input label="Full Name" required {...f('name')} placeholder="Student's full name" />
+          <Input label="Roll No" {...f('roll_no')} placeholder="e.g. 2024001" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Input label="Login Email" type="email" required {...f('email')} placeholder="student@school.edu" />
+          <Input label="Temporary Password" type="text" required {...f('password')} placeholder="Student can change later" />
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <Select label="Class" required {...f('class_id')}>
+            <option value="">Select...</option>
+            {classes.map(c => <option key={c.id} value={c.id}>{c.name} — {c.section}</option>)}
+          </Select>
+          <Input label="Date of Birth" type="date" {...f('dob')} />
+          <Select label="Gender" {...f('gender')}>
+            <option value="">--</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </Select>
+        </div>
+        <Input label="Address" {...f('address')} placeholder="Full address" />
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Guardian / Parent</p>
           <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Class</label>
-              <select
-                value={form.class_id}
-                onChange={(e) => setForm({ ...form, class_id: e.target.value })}
-                required
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select...</option>
-                {classes.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name} — {c.section}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">DOB</label>
-              <input
-                type="date"
-                value={form.dob}
-                onChange={(e) => setForm({ ...form, dob: e.target.value })}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Gender</label>
-              <select
-                value={form.gender}
-                onChange={(e) => setForm({ ...form, gender: e.target.value })}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">--</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
+            <Input placeholder="Guardian name" {...f('guardian_name')} />
+            <Input placeholder="Phone number" {...f('guardian_phone')} />
+            <Input type="email" placeholder="Guardian email" {...f('guardian_email')} />
           </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700">Address</label>
-            <input
-              value={form.address}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="pt-2 border-t border-gray-100">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-              Guardian / Parent
-            </p>
-            <div className="grid grid-cols-3 gap-3">
-              <input
-                value={form.guardian_name}
-                onChange={(e) => setForm({ ...form, guardian_name: e.target.value })}
-                placeholder="Guardian name"
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                value={form.guardian_phone}
-                onChange={(e) => setForm({ ...form, guardian_phone: e.target.value })}
-                placeholder="Guardian phone"
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="email"
-                value={form.guardian_email}
-                onChange={(e) => setForm({ ...form, guardian_email: e.target.value })}
-                placeholder="Guardian email"
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <p className="text-xs text-gray-400 mt-1.5">
-              This guardian email links the parent's portal account to this student. Create the
-              matching parent login from the Parents page.
-            </p>
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-              Cancel
-            </button>
-            <button type="submit" disabled={mutation.isPending}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
-              {mutation.isPending ? "Creating..." : "Create Student"}
-            </button>
-          </div>
-        </form>
+          <p className="text-xs text-slate-400 mt-2">
+            Guardian email links the parent portal. Create a matching parent login on the Parents page.
+          </p>
+        </div>
       </div>
-    </div>
-  );
+    </Modal>
+  )
 }
 
-// ── Edit Student Modal ────────────────────────────────────────────────
+// ── Edit Modal ────────────────────────────────────────────────────────────────
 function EditStudentModal({ onClose, student }) {
-  const qc = useQueryClient();
-
+  const qc = useQueryClient()
   const [form, setForm] = useState({
-    roll_no:        student.roll_no || "",
-    class_id:       student.class_id || "",
-    dob:            student.dob?.split("T")[0] || "",
-    gender:         student.gender || "",
-    address:        student.address || "",
-    guardian_name:  student.guardian_name || "",
-    guardian_phone: student.guardian_phone || "",
-    guardian_email: student.guardian_email || "",
-  });
-  const [error, setError] = useState("");
-
-  const { data: classes = [] } = useQuery({
-    queryKey: ["classes"],
-    queryFn: fetchClasses,
-  });
+    roll_no: student.roll_no || '', class_id: student.class_id || '',
+    dob: student.dob?.split('T')[0] || '', gender: student.gender || '',
+    address: student.address || '', guardian_name: student.guardian_name || '',
+    guardian_phone: student.guardian_phone || '', guardian_email: student.guardian_email || '',
+  })
+  const [error, setError] = useState('')
+  const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: fetchClasses })
 
   const mutation = useMutation({
     mutationFn: (data) => updateStudent(student.id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["students"] });
-      onClose();
-    },
-    onError: (err) =>
-      setError(err.response?.data?.error || "Something went wrong."),
-  });
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['students'] }); onClose() },
+    onError: (err) => setError(err.response?.data?.error || 'Something went wrong.'),
+  })
+
+  const f = (key) => ({ value: form[key], onChange: (e) => setForm({ ...form, [key]: e.target.value }) })
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg">
-        <h2 className="text-lg font-semibold mb-1">Edit Student</h2>
-        <p className="text-sm text-gray-500 mb-4">{student.name} — {student.email}</p>
-
-        {error && (
-          <p className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 p-2 rounded-lg">
-            {error}
-          </p>
-        )}
-
-        <form
-          onSubmit={(e) => { e.preventDefault(); setError(""); mutation.mutate(form); }}
-          className="space-y-3"
-        >
+    <Modal open onClose={onClose} title="Edit Student" subtitle={`${student.name} · ${student.email}`} size="md"
+      footer={<>
+        <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <Button loading={mutation.isPending} onClick={() => { setError(''); mutation.mutate(form) }}>
+          Save Changes
+        </Button>
+      </>}
+    >
+      {error && (
+        <div className="flex items-center gap-2 p-3 mb-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl text-sm text-red-600 dark:text-red-400">
+          <AlertCircle size={14} className="shrink-0" />
+          {error}
+        </div>
+      )}
+      <div className="space-y-4">
+        <div className="grid grid-cols-3 gap-3">
+          <Input label="Roll No" {...f('roll_no')} />
+          <Select label="Class" {...f('class_id')}>
+            <option value="">--</option>
+            {classes.map(c => <option key={c.id} value={c.id}>{c.name} — {c.section}</option>)}
+          </Select>
+          <Select label="Gender" {...f('gender')}>
+            <option value="">--</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </Select>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Input label="Date of Birth" type="date" {...f('dob')} />
+          <Input label="Address" {...f('address')} />
+        </div>
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Guardian / Parent</p>
           <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Roll No</label>
-              <input
-                value={form.roll_no}
-                onChange={(e) => setForm({ ...form, roll_no: e.target.value })}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Class</label>
-              <select
-                value={form.class_id}
-                onChange={(e) => setForm({ ...form, class_id: e.target.value })}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">--</option>
-                {classes.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name} — {c.section}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Gender</label>
-              <select
-                value={form.gender}
-                onChange={(e) => setForm({ ...form, gender: e.target.value })}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">--</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
+            <Input placeholder="Guardian name" {...f('guardian_name')} />
+            <Input placeholder="Phone number" {...f('guardian_phone')} />
+            <Input type="email" placeholder="Guardian email" {...f('guardian_email')} />
           </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700">Address</label>
-            <input
-              value={form.address}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="pt-2 border-t border-gray-100">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-              Guardian / Parent
-            </p>
-            <div className="grid grid-cols-3 gap-3">
-              <input
-                value={form.guardian_name}
-                onChange={(e) => setForm({ ...form, guardian_name: e.target.value })}
-                placeholder="Guardian name"
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                value={form.guardian_phone}
-                onChange={(e) => setForm({ ...form, guardian_phone: e.target.value })}
-                placeholder="Guardian phone"
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="email"
-                value={form.guardian_email}
-                onChange={(e) => setForm({ ...form, guardian_email: e.target.value })}
-                placeholder="Guardian email"
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-              Cancel
-            </button>
-            <button type="submit" disabled={mutation.isPending}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
-              {mutation.isPending ? "Saving..." : "Save Changes"}
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
-    </div>
-  );
+    </Modal>
+  )
 }
 
-// ── Main Page ──────────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────────────────
 export default function Students() {
-  const qc = useQueryClient();
-  const [modal, setModal] = useState(null); // null | 'add' | studentObj
-  const [search, setSearch] = useState("");
-  const [filterClass, setFilterClass] = useState("");
-  const [filterStatus, setFilterStatus] = useState("active");
+  const qc = useQueryClient()
+  const [modal, setModal] = useState(null) // null | 'add' | studentObj
+  const [filterClass, setFilterClass] = useState('')
+  const [filterStatus, setFilterStatus] = useState('active')
 
-  const { data: students = [], isLoading } = useQuery({
-    queryKey: ["students"],
-    queryFn: fetchStudents,
-  });
-
-  const { data: classes = [] } = useQuery({
-    queryKey: ["classes"],
-    queryFn: fetchClasses,
-  });
+  const { data: students = [], isLoading } = useQuery({ queryKey: ['students'], queryFn: fetchStudents })
+  const { data: classes  = [] }            = useQuery({ queryKey: ['classes'],  queryFn: fetchClasses  })
 
   const statusMutation = useMutation({
     mutationFn: ({ id, is_active }) => setStudentStatus(id, is_active),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["students"] }),
-    onError: (err) => alert(err.response?.data?.error || "Failed to update status."),
-  });
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['students'] }),
+    onError:   (err) => alert(err.response?.data?.error || 'Failed to update status.'),
+  })
 
-  const handleToggleStatus = (student) => {
-    const action = student.is_active ? "deactivate" : "reactivate";
-    const msg = student.is_active
-      ? `Deactivate ${student.name}? They will lose login access immediately. All attendance, marks, and fee records stay intact, and this can be reversed any time.`
-      : `Reactivate ${student.name}'s account?`;
-    if (confirm(msg)) {
-      statusMutation.mutate({ id: student.id, is_active: !student.is_active });
-    }
-  };
+  const handleToggleStatus = (s) => {
+    const msg = s.is_active
+      ? `Deactivate ${s.name}? They will lose login access but all records are preserved.`
+      : `Reactivate ${s.name}'s account?`
+    if (confirm(msg)) statusMutation.mutate({ id: s.id, is_active: !s.is_active })
+  }
 
-  const filtered = students.filter((s) => {
-    if (filterClass && String(s.class_id) !== filterClass) return false;
-    if (filterStatus === "active" && !s.is_active) return false;
-    if (filterStatus === "inactive" && s.is_active) return false;
-    if (search && !`${s.name} ${s.email} ${s.roll_no}`.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
+  const displayData = students.filter(s => {
+    if (filterClass && String(s.class_id) !== filterClass) return false
+    if (filterStatus === 'active' && !s.is_active) return false
+    if (filterStatus === 'inactive' && s.is_active) return false
+    return true
+  })
 
-  const activeCount = students.filter((s) => s.is_active).length;
-  const inactiveCount = students.filter((s) => !s.is_active).length;
+  const activeCount   = students.filter(s => s.is_active).length
+  const inactiveCount = students.length - activeCount
+
+  const columns = [
+    {
+      header: 'Student',
+      key: 'name',
+      render: (_, s) => (
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+            {s.name?.charAt(0)?.toUpperCase()}
+          </div>
+          <div>
+            <p className="font-medium text-slate-800 dark:text-slate-100">{s.name}</p>
+            <p className="text-xs text-slate-400">{s.email}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: 'Class', key: 'class_name',
+      render: (_, s) => s.class_name ? `${s.class_name} — ${s.section}` : <span className="text-slate-300">—</span>,
+    },
+    { header: 'Roll No', key: 'roll_no', render: v => v || '—' },
+    {
+      header: 'Guardian', key: 'guardian_name',
+      render: (_, s) => (
+        <div>
+          <p className="text-sm text-slate-700 dark:text-slate-300">{s.guardian_name || '—'}</p>
+          {s.guardian_email && <p className="text-xs text-slate-400">{s.guardian_email}</p>}
+        </div>
+      ),
+    },
+    {
+      header: 'Status', key: 'is_active', sortable: false,
+      render: (v) => <StatusBadge status={v ? 'active' : 'inactive'} />,
+    },
+    {
+      header: 'Actions', key: 'id', sortable: false,
+      render: (_, s) => (
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" leftIcon={<Pencil size={12} />} onClick={() => setModal(s)}>
+            Edit
+          </Button>
+          <Button
+            size="sm"
+            variant={s.is_active ? 'danger' : 'success'}
+            leftIcon={s.is_active ? <ToggleLeft size={12} /> : <ToggleRight size={12} />}
+            onClick={() => handleToggleStatus(s)}
+          >
+            {s.is_active ? 'Deactivate' : 'Reactivate'}
+          </Button>
+        </div>
+      ),
+    },
+  ]
 
   return (
     <DashboardLayout title="Students">
-      <div className="p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+      <div className="p-6 space-y-6">
+
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-800">Students</h1>
-            <p className="text-sm text-gray-500 mt-0.5">
-              Manage student accounts and guardian details
-            </p>
+            <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 font-display">Students</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Manage student accounts and guardian details</p>
           </div>
-          <button
-            onClick={() => setModal("add")}
-            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
-          >
-            + Add Student
-          </button>
+          <Button leftIcon={<UserPlus size={15} />} onClick={() => setModal('add')}>
+            Add Student
+          </Button>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-            <p className="text-xs text-gray-500">Total Students</p>
-            <p className="text-2xl font-semibold text-gray-800 mt-1">{students.length}</p>
-          </div>
-          <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-            <p className="text-xs text-green-600">Active</p>
-            <p className="text-2xl font-semibold text-green-700 mt-1">{activeCount}</p>
-          </div>
-          <div className="bg-gray-100 rounded-xl p-4 border border-gray-200">
-            <p className="text-xs text-gray-500">Deactivated</p>
-            <p className="text-2xl font-semibold text-gray-600 mt-1">{inactiveCount}</p>
-          </div>
+        {/* ── Stat cards ── */}
+        <div className="grid grid-cols-3 gap-4">
+          {[
+            { label: 'Total Students', value: students.length, icon: GraduationCap, gradient: 'from-violet-500 to-purple-600' },
+            { label: 'Active',         value: activeCount,      icon: Users,          gradient: 'from-emerald-500 to-teal-600'  },
+            { label: 'Deactivated',    value: inactiveCount,    icon: UserX,          gradient: 'from-slate-400 to-slate-600'   },
+          ].map((s, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
+              <Card className="flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.gradient} flex items-center justify-center shrink-0`}>
+                  <s.icon size={18} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-display">{s.value}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{s.label}</p>
+                </div>
+              </Card>
+            </motion.div>
+          ))}
         </div>
 
-        {/* Filters */}
-        <div className="flex gap-3 mb-4 flex-wrap">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name, email, roll no..."
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <select
-            value={filterClass}
-            onChange={(e) => setFilterClass(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">All Classes</option>
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>{c.name} — {c.section}</option>
-            ))}
-          </select>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="active">Active only</option>
-            <option value="inactive">Deactivated only</option>
-            <option value="">All</option>
-          </select>
-        </div>
+        {/* ── DataTable ── */}
+        <DataTable
+          columns={columns}
+          data={displayData}
+          loading={isLoading}
+          searchKeys={['name', 'email', 'roll_no', 'guardian_name']}
+          pageSize={12}
+          actions={
+            <>
+              <Select value={filterClass} onChange={e => setFilterClass(e.target.value)} className="h-9 text-sm">
+                <option value="">All Classes</option>
+                {classes.map(c => <option key={c.id} value={c.id}>{c.name} — {c.section}</option>)}
+              </Select>
+              <Select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="h-9 text-sm">
+                <option value="active">Active only</option>
+                <option value="inactive">Deactivated</option>
+                <option value="">All</option>
+              </Select>
+            </>
+          }
+          emptyState={
+            <div className="flex flex-col items-center gap-2 py-8">
+              <GraduationCap size={32} className="text-slate-200 dark:text-slate-700" />
+              <p className="text-sm font-medium text-slate-500">No students found</p>
+            </div>
+          }
+        />
 
-        {/* Table */}
-        {isLoading ? (
-          <p className="text-gray-400 text-sm">Loading students...</p>
-        ) : (
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
-                <tr>
-                  <th className="text-left px-5 py-3">Student</th>
-                  <th className="text-left px-5 py-3">Class</th>
-                  <th className="text-left px-5 py-3">Roll No</th>
-                  <th className="text-left px-5 py-3">Guardian</th>
-                  <th className="text-center px-4 py-3">Status</th>
-                  <th className="text-left px-5 py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-8 text-gray-400">
-                      No students found.
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map((s) => (
-                    <tr key={s.id} className={`hover:bg-gray-50 ${!s.is_active ? "opacity-60" : ""}`}>
-                      <td className="px-5 py-3">
-                        <p className="font-medium text-gray-800">{s.name}</p>
-                        <p className="text-xs text-gray-400">{s.email}</p>
-                      </td>
-                      <td className="px-5 py-3 text-gray-600">
-                        {s.class_name ? `${s.class_name} — ${s.section}` : <span className="text-gray-300">Unassigned</span>}
-                      </td>
-                      <td className="px-5 py-3 text-gray-600">{s.roll_no || "—"}</td>
-                      <td className="px-5 py-3 text-gray-600 text-xs">
-                        {s.guardian_name || "—"}
-                        {s.guardian_email && (
-                          <p className="text-gray-400">{s.guardian_email}</p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          s.is_active
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-200 text-gray-500"
-                        }`}>
-                          {s.is_active ? "Active" : "Deactivated"}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setModal(s)}
-                            className="text-xs px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleToggleStatus(s)}
-                            className={`text-xs px-3 py-1 border rounded-lg ${
-                              s.is_active
-                                ? "border-red-200 text-red-500 hover:bg-red-50"
-                                : "border-green-200 text-green-600 hover:bg-green-50"
-                            }`}
-                          >
-                            {s.is_active ? "Deactivate" : "Reactivate"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Modals */}
-        {modal === "add" && <AddStudentModal onClose={() => setModal(null)} />}
-        {modal && modal !== "add" && (
-          <EditStudentModal student={modal} onClose={() => setModal(null)} />
-        )}
+        {/* ── Modals ── */}
+        {modal === 'add' && <AddStudentModal onClose={() => setModal(null)} />}
+        {modal && modal !== 'add' && <EditStudentModal student={modal} onClose={() => setModal(null)} />}
       </div>
     </DashboardLayout>
-  );
+  )
 }

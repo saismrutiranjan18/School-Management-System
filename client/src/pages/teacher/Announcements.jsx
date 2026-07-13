@@ -1,39 +1,30 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
-import {
-  fetchAnnouncements,
-  createAnnouncement,
-} from '../../api/announcements.api'
+import { fetchAnnouncements, createAnnouncement } from '../../api/announcements.api'
 import { fetchClasses } from '../../api/classes.api'
 import DashboardLayout from '../../components/DashboardLayout'
+import Button from '../../components/ui/Button'
+import { Input, Select, Textarea } from '../../components/ui/Input'
+import Badge from '../../components/ui/Badge'
+import Card from '../../components/ui/Card'
+import { Megaphone, Plus, AlertCircle } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
-const PRIORITY_STYLES = {
-  urgent: 'bg-red-100 text-red-700 border-red-200',
-  high:   'bg-orange-100 text-orange-700 border-orange-200',
-  normal: 'bg-blue-50 text-blue-700 border-blue-200',
-  low:    'bg-gray-100 text-gray-500 border-gray-200',
-}
+const PRIORITY_VARIANT = { urgent: 'danger', high: 'warning', normal: 'info', low: 'default' }
 
 export default function TeacherAnnouncements() {
-  const qc          = useQueryClient()
-  const { user }    = useSelector(state => state.auth)
-  const [showForm,  setShowForm]  = useState(false)
+  const qc = useQueryClient()
+  const { user } = useSelector(state => state.auth)
+  const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({
     title: '', body: '', target_role: 'student',
     target_class: '', priority: 'normal', send_email: false,
   })
   const [error, setError] = useState('')
 
-  const { data: announcements = [], isLoading } = useQuery({
-    queryKey: ['announcements'],
-    queryFn:  fetchAnnouncements,
-  })
-
-  const { data: classes = [] } = useQuery({
-    queryKey: ['classes'],
-    queryFn:  fetchClasses,
-  })
+  const { data: announcements = [], isLoading } = useQuery({ queryKey: ['announcements'], queryFn: fetchAnnouncements })
+  const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: fetchClasses })
 
   const mutation = useMutation({
     mutationFn: createAnnouncement,
@@ -45,140 +36,100 @@ export default function TeacherAnnouncements() {
     onError: (err) => setError(err.response?.data?.error || 'Failed to post.'),
   })
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    setError('')
-    mutation.mutate({ ...form, target_class: form.target_class || null })
-  }
+  const f = (key) => ({ value: form[key], onChange: (e) => setForm({ ...form, [key]: e.target.value }) })
 
   return (
-     <DashboardLayout title="Announcements">
-       <div className="p-6 max-w-3xl">
-         <div className="flex items-center justify-between mb-6">
-           <div>
-             <h1 className="text-2xl font-semibold text-gray-800">Announcements</h1>
-             <p className="text-sm text-gray-500 mt-0.5">View notices and post class announcements</p>
+    <DashboardLayout title="Announcements">
+      <div className="p-6 space-y-6 max-w-3xl">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 font-display">Announcements</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">View notices and post class announcements</p>
+          </div>
+          <Button leftIcon={showForm ? null : <Plus size={15} />} variant={showForm ? 'outline' : 'primary'} onClick={() => setShowForm(!showForm)}>
+            {showForm ? 'Cancel' : 'Post Notice'}
+          </Button>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
-        >
-          {showForm ? 'Cancel' : '+ Post Notice'}
-        </button>
-      </div>
 
-      {/* Quick post form */}
-      {showForm && (
-        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Post a Notice</h2>
-          {error && (
-            <p className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 p-2 rounded-lg">{error}</p>
-          )}
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <input
-              value={form.title}
-              onChange={e => setForm({ ...form, title: e.target.value })}
-              placeholder="Notice title..."
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <textarea
-              value={form.body}
-              onChange={e => setForm({ ...form, body: e.target.value })}
-              placeholder="Write your notice here..."
-              rows={3}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            />
-            <div className="grid grid-cols-3 gap-3">
-              <select
-                value={form.target_role}
-                onChange={e => setForm({ ...form, target_role: e.target.value })}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="student">Students</option>
-                <option value="parent">Parents</option>
-                <option value="all">Everyone</option>
-              </select>
-              <select
-                value={form.target_class}
-                onChange={e => setForm({ ...form, target_class: e.target.value })}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Classes</option>
-                {classes.map(c => (
-                  <option key={c.id} value={c.id}>{c.name} — {c.section}</option>
-                ))}
-              </select>
-              <select
-                value={form.priority}
-                onChange={e => setForm({ ...form, priority: e.target.value })}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="te_send_email"
-                checked={form.send_email}
-                onChange={e => setForm({ ...form, send_email: e.target.checked })}
-                className="w-4 h-4 accent-blue-600"
-              />
-              <label htmlFor="te_send_email" className="text-sm text-gray-600">
-                Send email notification
-              </label>
-            </div>
-            <button
-              type="submit"
-              disabled={mutation.isPending}
-              className="w-full py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            >
-              {mutation.isPending ? 'Posting...' : 'Post Notice'}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* Announcements list */}
-      {isLoading ? (
-        <p className="text-gray-400 text-sm">Loading...</p>
-      ) : announcements.length === 0 ? (
-        <p className="text-gray-400 text-sm text-center py-16">No announcements yet.</p>
-      ) : (
-        <div className="space-y-3">
-          {announcements.map(ann => (
-            <div key={ann.id}
-              className="bg-white border border-gray-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <h3 className="text-sm font-semibold text-gray-800">{ann.title}</h3>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${PRIORITY_STYLES[ann.priority]}`}>
-                      {ann.priority}
-                    </span>
-                    {ann.class_name && (
-                      <span className="text-xs px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full">
-                        {ann.class_name} {ann.class_section}
-                      </span>
-                    )}
+        {/* Quick post form */}
+        <AnimatePresence>
+          {showForm && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+              <Card>
+                <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Post a Notice</h2>
+                {error && (
+                  <div className="flex items-center gap-2 p-3 mb-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl text-sm text-red-600 dark:text-red-400">
+                    <AlertCircle size={14} className="shrink-0" />{error}
                   </div>
-                  <p className="text-sm text-gray-600 leading-relaxed">{ann.body}</p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    {ann.created_by_name} · {new Date(ann.created_at).toLocaleDateString('en-IN', {
-                      day: '2-digit', month: 'short', year: 'numeric',
-                    })}
-                  </p>
-                </div>
-              </div>
+                )}
+                <form onSubmit={(e) => { e.preventDefault(); setError(''); mutation.mutate({ ...form, target_class: form.target_class || null }) }} className="space-y-3">
+                  <Input placeholder="Notice title…" required {...f('title')} />
+                  <Textarea placeholder="Write your notice here…" required {...f('body')} />
+                  <div className="grid grid-cols-3 gap-3">
+                    <Select {...f('target_role')}>
+                      <option value="student">Students</option>
+                      <option value="parent">Parents</option>
+                      <option value="all">Everyone</option>
+                    </Select>
+                    <Select {...f('target_class')}>
+                      <option value="">All Classes</option>
+                      {classes.map(c => <option key={c.id} value={c.id}>{c.name} — {c.section}</option>)}
+                    </Select>
+                    <Select {...f('priority')}>
+                      <option value="normal">Normal</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input type="checkbox" id="te_send_email" checked={form.send_email}
+                      onChange={e => setForm({ ...form, send_email: e.target.checked })}
+                      className="w-4 h-4 accent-primary-600 rounded" />
+                    <label htmlFor="te_send_email" className="text-sm text-slate-600 dark:text-slate-400">Send email notification</label>
+                  </div>
+                  <Button type="submit" loading={mutation.isPending} className="w-full">
+                    Post Notice
+                  </Button>
+                </form>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Announcements list */}
+        {isLoading ? (
+          <Card><p className="text-sm text-slate-400 text-center py-12">Loading…</p></Card>
+        ) : announcements.length === 0 ? (
+          <Card>
+            <div className="flex flex-col items-center gap-2 py-12 text-slate-400">
+              <Megaphone size={40} className="opacity-30" />
+              <p className="text-sm">No announcements yet</p>
             </div>
-          ))}
-        </div>
-      )}
-        </div>
-  </DashboardLayout>
-)
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {announcements.map(ann => (
+              <motion.div key={ann.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} layout>
+                <Card>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{ann.title}</h3>
+                        <Badge variant={PRIORITY_VARIANT[ann.priority] || 'default'}>{ann.priority}</Badge>
+                        {ann.class_name && <Badge variant="purple">{ann.class_name} {ann.class_section}</Badge>}
+                      </div>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{ann.body}</p>
+                      <p className="text-xs text-slate-400 mt-2">
+                        {ann.created_by_name} · {new Date(ann.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+    </DashboardLayout>
+  )
 }

@@ -3,11 +3,27 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchExams, createExam, updateExam, deleteExam } from '../../api/exams.api'
 import { fetchClasses } from '../../api/classes.api'
 import DashboardLayout from '../../components/DashboardLayout'
+import DataTable from '../../components/ui/DataTable'
+import Modal from '../../components/ui/Modal'
+import Button from '../../components/ui/Button'
+import { Input, Select } from '../../components/ui/Input'
+import { StatusBadge } from '../../components/ui/Badge'
+import Card from '../../components/ui/Card'
+import { FileText, Plus, Pencil, Trash2, AlertCircle, Calendar, BookOpen } from 'lucide-react'
+import { motion } from 'framer-motion'
+
+function ErrorAlert({ msg }) {
+  if (!msg) return null
+  return (
+    <div className="flex items-center gap-2 p-3 mb-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl text-sm text-red-600 dark:text-red-400">
+      <AlertCircle size={14} className="shrink-0" />{msg}
+    </div>
+  )
+}
 
 function ExamModal({ onClose, existing }) {
-  const qc     = useQueryClient()
+  const qc = useQueryClient()
   const isEdit = !!existing
-
   const [form, setForm] = useState({
     name:          existing?.name          || '',
     class_id:      existing?.class_id      || '',
@@ -17,204 +33,156 @@ function ExamModal({ onClose, existing }) {
     is_published:  existing?.is_published  || false,
   })
   const [error, setError] = useState('')
-
   const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: fetchClasses })
 
   const mutation = useMutation({
     mutationFn: (data) => isEdit ? updateExam(existing.id, data) : createExam(data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['exams'] }); onClose() },
-    onError:   (err) => setError(err.response?.data?.error || 'Something went wrong.'),
+    onError: (err) => setError(err.response?.data?.error || 'Something went wrong.'),
   })
 
+  const f = (key) => ({ value: form[key], onChange: (e) => setForm({ ...form, [key]: e.target.value }) })
+
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
-        <h2 className="text-lg font-semibold mb-4">{isEdit ? 'Edit Exam' : 'Schedule Exam'}</h2>
-
-        {error && (
-          <p className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 p-2 rounded-lg">{error}</p>
-        )}
-
-        <form onSubmit={(e) => { e.preventDefault(); mutation.mutate(form) }} className="space-y-3">
-          <div>
-            <label className="text-sm font-medium text-gray-700">Exam Name</label>
-            <input
-              value={form.name}
-              onChange={e => setForm({ ...form, name: e.target.value })}
-              placeholder="e.g. Mid-Term Exam 2024"
-              required
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700">Class</label>
-            <select
-              value={form.class_id}
-              onChange={e => setForm({ ...form, class_id: e.target.value })}
-              required
-              disabled={isEdit}
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-            >
-              <option value="">Select class...</option>
-              {classes.map(c => (
-                <option key={c.id} value={c.id}>{c.name} — {c.section}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Start Date</label>
-              <input
-                type="date" value={form.start_date}
-                onChange={e => setForm({ ...form, start_date: e.target.value })}
-                required
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">End Date</label>
-              <input
-                type="date" value={form.end_date}
-                onChange={e => setForm({ ...form, end_date: e.target.value })}
-                required
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {isEdit && (
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="publish"
-                checked={form.is_published}
-                onChange={e => setForm({ ...form, is_published: e.target.checked })}
-                className="w-4 h-4 accent-blue-600"
-              />
-              <label htmlFor="publish" className="text-sm text-gray-700">
-                Publish results (students can view report cards)
-              </label>
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-              Cancel
-            </button>
-            <button type="submit" disabled={mutation.isPending}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
-              {mutation.isPending ? 'Saving...' : isEdit ? 'Update' : 'Schedule'}
-            </button>
-          </div>
-        </form>
+    <Modal open onClose={onClose} title={isEdit ? 'Edit Exam' : 'Schedule Exam'} subtitle="Configure exam details" size="sm"
+      footer={<>
+        <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <Button loading={mutation.isPending} onClick={() => { setError(''); mutation.mutate(form) }}>
+          {isEdit ? 'Save Changes' : 'Schedule Exam'}
+        </Button>
+      </>}
+    >
+      <ErrorAlert msg={error} />
+      <div className="space-y-3">
+        <Input label="Exam Name" required placeholder="e.g. Mid-Term 2024" {...f('name')} />
+        <div className="grid grid-cols-2 gap-3">
+          <Select label="Class" required {...f('class_id')}>
+            <option value="">-- Select --</option>
+            {classes.map(c => <option key={c.id} value={c.id}>{c.name} — {c.section}</option>)}
+          </Select>
+          <Input label="Academic Year" placeholder="2024-25" {...f('academic_year')} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Input label="Start Date" type="date" {...f('start_date')} />
+          <Input label="End Date"   type="date" {...f('end_date')} />
+        </div>
+        <div className="flex items-center gap-2 pt-1">
+          <input
+            type="checkbox"
+            id="is_published"
+            checked={form.is_published}
+            onChange={e => setForm({ ...form, is_published: e.target.checked })}
+            className="w-4 h-4 rounded accent-primary-600"
+          />
+          <label htmlFor="is_published" className="text-sm text-slate-700 dark:text-slate-300">
+            Publish results immediately (visible to students & parents)
+          </label>
+        </div>
       </div>
-    </div>
+    </Modal>
   )
-}
-
-const EXAM_TYPE_COLOR = (name) => {
-  const n = name.toLowerCase()
-  if (n.includes('mid'))    return 'bg-blue-50 text-blue-700'
-  if (n.includes('final'))  return 'bg-red-50 text-red-700'
-  if (n.includes('unit'))   return 'bg-green-50 text-green-700'
-  return 'bg-gray-100 text-gray-600'
 }
 
 export default function Exams() {
   const qc = useQueryClient()
-  const [modal,    setModal]    = useState(null)
   const [filterClass, setFilterClass] = useState('')
+  const [modal, setModal] = useState(null)
 
-  const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: fetchClasses })
-  const { data: exams = [], isLoading } = useQuery({
-    queryKey: ['exams', filterClass],
-    queryFn:  () => fetchExams(filterClass || undefined),
-  })
+  const { data: exams   = [], isLoading } = useQuery({ queryKey: ['exams', filterClass], queryFn: () => fetchExams(filterClass || undefined) })
+  const { data: classes = [] }            = useQuery({ queryKey: ['classes'], queryFn: fetchClasses })
 
   const deleteMutation = useMutation({
     mutationFn: deleteExam,
-    onSuccess:  () => qc.invalidateQueries({ queryKey: ['exams'] }),
-    onError:    (err) => alert(err.response?.data?.error || 'Delete failed.'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['exams'] }),
+    onError: (err) => alert(err.response?.data?.error || 'Cannot delete exam.'),
   })
 
-  return (
-  <DashboardLayout title="Exams">
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-800">Exams</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Schedule and manage all examinations</p>
+  const handleDelete = (e) => {
+    if (confirm(`Delete exam "${e.name}"? All subject entries will also be removed.`))
+      deleteMutation.mutate(e.id)
+  }
+
+  const published   = exams.filter(e => e.is_published).length
+  const unpublished = exams.length - published
+
+  const columns = [
+    {
+      header: 'Exam', key: 'name',
+      render: (_, e) => (
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center shrink-0">
+            <FileText size={15} className="text-white" />
+          </div>
+          <div>
+            <p className="font-medium text-slate-800 dark:text-slate-100">{e.name}</p>
+            <p className="text-xs text-slate-400">{e.academic_year}</p>
+          </div>
         </div>
-        <button onClick={() => setModal('add')}
-          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
-          + Schedule Exam
-        </button>
-      </div>
+      ),
+    },
+    { header: 'Class', key: 'class_name', render: (_, e) => e.class_name ? `${e.class_name} — ${e.section}` : '—' },
+    { header: 'Start',  key: 'start_date', render: v => v ? new Date(v).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—' },
+    { header: 'End',    key: 'end_date',   render: v => v ? new Date(v).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—' },
+    { header: 'Status', key: 'is_published', sortable: false, render: v => <StatusBadge status={v ? 'published' : 'draft'} /> },
+    {
+      header: 'Actions', key: 'id', sortable: false,
+      render: (_, e) => (
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" leftIcon={<Pencil size={12} />} onClick={() => setModal(e)}>Edit</Button>
+          <Button size="sm" variant="danger"  leftIcon={<Trash2 size={12} />} onClick={() => handleDelete(e)}>Delete</Button>
+        </div>
+      ),
+    },
+  ]
 
-      {/* Filter */}
-      <select value={filterClass} onChange={e => setFilterClass(e.target.value)}
-        className="mb-4 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-        <option value="">All Classes</option>
-        {classes.map(c => (
-          <option key={c.id} value={c.id}>{c.name} — {c.section}</option>
-        ))}
-      </select>
+  return (
+    <DashboardLayout title="Exams">
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 font-display">Exams</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Schedule and manage examinations</p>
+          </div>
+          <Button leftIcon={<Plus size={15} />} onClick={() => setModal('add')}>Schedule Exam</Button>
+        </div>
 
-      {isLoading ? (
-        <p className="text-gray-400 text-sm">Loading exams...</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-3">
-          {exams.length === 0 && (
-            <p className="text-gray-400 text-sm text-center py-12">No exams scheduled yet.</p>
-          )}
-          {exams.map(exam => (
-            <div key={exam.id}
-              className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-center justify-between hover:shadow-sm transition">
-              <div className="flex items-center gap-4">
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${EXAM_TYPE_COLOR(exam.name)}`}>
-                  {exam.name}
-                </span>
-                <div>
-                  <p className="text-sm font-medium text-gray-800">
-                    {exam.class_name} — {exam.section}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    {new Date(exam.start_date).toLocaleDateString('en-IN')} →{' '}
-                    {new Date(exam.end_date).toLocaleDateString('en-IN')}
-                  </p>
+        <div className="grid grid-cols-3 gap-4">
+          {[
+            { label: 'Total Exams', value: exams.length,  icon: FileText,  gradient: 'from-violet-500 to-fuchsia-600' },
+            { label: 'Published',   value: published,     icon: BookOpen,  gradient: 'from-emerald-500 to-teal-600'   },
+            { label: 'Draft',       value: unpublished,   icon: Calendar,  gradient: 'from-slate-400 to-slate-600'    },
+          ].map((s, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
+              <Card className="flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.gradient} flex items-center justify-center shrink-0`}>
+                  <s.icon size={18} className="text-white" />
                 </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                  exam.is_published
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-yellow-100 text-yellow-700'
-                }`}>
-                  {exam.is_published ? 'Published' : 'Draft'}
-                </span>
-                <button onClick={() => setModal(exam)}
-                  className="text-xs px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50">
-                  Edit
-                </button>
-                <button
-                  onClick={() => { if (confirm('Delete this exam?')) deleteMutation.mutate(exam.id) }}
-                  className="text-xs px-3 py-1 border border-red-200 text-red-500 rounded-lg hover:bg-red-50">
-                  Delete
-                </button>
-              </div>
-            </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-display">{s.value}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{s.label}</p>
+                </div>
+              </Card>
+            </motion.div>
           ))}
         </div>
-      )}
 
-      {modal && (
-        <ExamModal onClose={() => setModal(null)} existing={modal === 'add' ? null : modal} />
-      )}
-        </div>
-  </DashboardLayout>
-)
+        <DataTable
+          columns={columns}
+          data={exams}
+          loading={isLoading}
+          searchKeys={['name', 'class_name', 'academic_year']}
+          actions={
+            <Select value={filterClass} onChange={e => setFilterClass(e.target.value)} className="h-9 text-sm">
+              <option value="">All Classes</option>
+              {classes.map(c => <option key={c.id} value={c.id}>{c.name} — {c.section}</option>)}
+            </Select>
+          }
+          emptyState={<div className="flex flex-col items-center gap-2 py-8 text-slate-400"><FileText size={32} className="opacity-30" /><p className="text-sm">No exams scheduled</p></div>}
+        />
+
+        {modal === 'add' && <ExamModal onClose={() => setModal(null)} />}
+        {modal && modal !== 'add' && <ExamModal existing={modal} onClose={() => setModal(null)} />}
+      </div>
+    </DashboardLayout>
+  )
 }

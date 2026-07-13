@@ -1,296 +1,158 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  fetchAnnouncements, createAnnouncement,
-  updateAnnouncement, deleteAnnouncement,
-} from '../../api/announcements.api'
+import { fetchAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement } from '../../api/announcements.api'
 import { fetchClasses } from '../../api/classes.api'
 import DashboardLayout from '../../components/DashboardLayout'
+import Modal from '../../components/ui/Modal'
+import Button from '../../components/ui/Button'
+import { Input, Select, Textarea } from '../../components/ui/Input'
+import Badge from '../../components/ui/Badge'
+import Card from '../../components/ui/Card'
+import { Megaphone, Plus, Pencil, Trash2, AlertCircle, AlertTriangle, Bell, BellOff, Eye, EyeOff } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
-const Icon = ({ d, size = 18, className = '' }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"
-    strokeLinejoin="round" aria-hidden="true"
-    className={className} style={{ flexShrink: 0 }}>
-    {Array.isArray(d) ? d.map((p, i) => <path key={i} d={p} />) : <path d={d} />}
-  </svg>
-)
-
-const ICONS = {
-  urgent:  ['M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z','M12 9v4','M12 17h.01'],
-  high:    ['M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z','M12 9v4','M12 17h.01'],
-  normal:  ['M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9','M13.73 21a2 2 0 0 1-3.46 0'],
-  low:     ['M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9','M13.73 21a2 2 0 0 1-3.46 0'],
-  empty:   ['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z','M14 2v6h6','M16 13H8','M16 17H8','M10 9H8'],
+const PRIORITY_CONFIG = {
+  urgent: { variant: 'danger',  icon: AlertTriangle, border: 'border-red-200 dark:border-red-800/40'   },
+  high:   { variant: 'warning', icon: AlertTriangle, border: 'border-amber-200 dark:border-amber-800/40' },
+  normal: { variant: 'info',    icon: Bell,          border: 'border-slate-200 dark:border-slate-700'   },
+  low:    { variant: 'default', icon: BellOff,       border: 'border-slate-100 dark:border-slate-800'   },
 }
 
-const PRIORITY_STYLES = {
-  urgent: { badge: 'bg-red-100    text-red-700    border-red-200',    dot: 'bg-red-500',    icon: ICONS.urgent, iconCls: 'text-red-500',    label: 'Urgent'  },
-  high:   { badge: 'bg-orange-100 text-orange-700 border-orange-200', dot: 'bg-orange-500', icon: ICONS.high,   iconCls: 'text-orange-500', label: 'High'    },
-  normal: { badge: 'bg-blue-50    text-blue-700   border-blue-200',   dot: 'bg-blue-400',   icon: ICONS.normal, iconCls: 'text-blue-500',   label: 'Normal'  },
-  low:    { badge: 'bg-gray-100   text-gray-500   border-gray-200',   dot: 'bg-gray-400',   icon: ICONS.low,    iconCls: 'text-gray-400',   label: 'Low'     },
-}
+const ROLE_LABELS = { all: 'Everyone', teacher: 'Teachers', student: 'Students', parent: 'Parents' }
 
-const ROLE_LABELS = {
-  all:     'Everyone',
-  teacher: 'Teachers',
-  student: 'Students',
-  parent:  'Parents',
-}
-
-/* ── Modal ── */
 function AnnouncementModal({ onClose, existing }) {
-  const qc     = useQueryClient()
+  const qc = useQueryClient()
   const isEdit = !!existing
-
   const [form, setForm] = useState({
-    title:        existing?.title        || '',
-    body:         existing?.body         || '',
-    target_role:  existing?.target_role  || 'all',
-    target_class: existing?.target_class || '',
-    priority:     existing?.priority     || 'normal',
-    is_active:    existing?.is_active    ?? true,
-    send_email:   false,
+    title: existing?.title || '', body: existing?.body || '',
+    target_role: existing?.target_role || 'all', target_class: existing?.target_class || '',
+    priority: existing?.priority || 'normal', is_active: existing?.is_active ?? true, send_email: false,
   })
   const [error, setError] = useState('')
-
-  const { data: classes = [] } = useQuery({
-    queryKey: ['classes'],
-    queryFn:  fetchClasses,
-  })
+  const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: fetchClasses })
 
   const mutation = useMutation({
-    mutationFn: (data) => isEdit
-      ? updateAnnouncement(existing.id, data)
-      : createAnnouncement(data),
+    mutationFn: (data) => isEdit ? updateAnnouncement(existing.id, data) : createAnnouncement(data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['announcements'] }); onClose() },
-    onError:   (err) => setError(err.response?.data?.error || 'Something went wrong.'),
+    onError: (err) => setError(err.response?.data?.error || 'Something went wrong.'),
   })
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    setError('')
-    mutation.mutate({ ...form, target_class: form.target_class || null })
-  }
+  const f = (key) => ({ value: form[key], onChange: (e) => setForm({ ...form, [key]: e.target.value }) })
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg">
-        <h2 className="text-lg font-semibold mb-4">
-          {isEdit ? 'Edit Announcement' : 'New Announcement'}
-        </h2>
-
-        {error && (
-          <p className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 p-2 rounded-lg">
-            {error}
-          </p>
+    <Modal open onClose={onClose} title={isEdit ? 'Edit Announcement' : 'New Announcement'}
+      subtitle="Post a notice to the school community" size="md"
+      footer={<>
+        <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <Button loading={mutation.isPending} onClick={() => { setError(''); mutation.mutate({ ...form, target_class: form.target_class || null }) }}>
+          {isEdit ? 'Update' : 'Post Announcement'}
+        </Button>
+      </>}
+    >
+      {error && <div className="flex items-center gap-2 p-3 mb-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl text-sm text-red-600 dark:text-red-400"><AlertCircle size={14} className="shrink-0" />{error}</div>}
+      <div className="space-y-3">
+        <Input label="Title" required placeholder="e.g. School closed on Friday" {...f('title')} />
+        <Textarea label="Message" required placeholder="Write your announcement here…" {...f('body')} />
+        <div className="grid grid-cols-2 gap-3">
+          <Select label="Target Audience" {...f('target_role')}>
+            <option value="all">Everyone</option>
+            <option value="teacher">Teachers only</option>
+            <option value="student">Students only</option>
+            <option value="parent">Parents only</option>
+          </Select>
+          <Select label="Priority" {...f('priority')}>
+            <option value="low">Low</option>
+            <option value="normal">Normal</option>
+            <option value="high">High</option>
+            <option value="urgent">Urgent</option>
+          </Select>
+        </div>
+        <Select label="Target Class (optional)" {...f('target_class')}>
+          <option value="">All classes</option>
+          {classes.map(c => <option key={c.id} value={c.id}>{c.name} — {c.section}</option>)}
+        </Select>
+        <div className="flex items-start gap-3 p-3 bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-800/30 rounded-xl">
+          <input type="checkbox" id="send_email" checked={form.send_email}
+            onChange={e => setForm({ ...form, send_email: e.target.checked })}
+            className="mt-0.5 w-4 h-4 accent-primary-600 rounded" />
+          <label htmlFor="send_email" className="text-sm text-primary-700 dark:text-primary-300">
+            Also send email notification
+            <span className="block text-xs text-primary-500 dark:text-primary-400 mt-0.5">Recipients will receive this via Gmail SMTP</span>
+          </label>
+        </div>
+        {isEdit && (
+          <div className="flex items-center gap-2">
+            <input type="checkbox" id="is_active" checked={form.is_active}
+              onChange={e => setForm({ ...form, is_active: e.target.checked })}
+              className="w-4 h-4 accent-primary-600 rounded" />
+            <label htmlFor="is_active" className="text-sm text-slate-700 dark:text-slate-300">Active (visible to users)</label>
+          </div>
         )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium text-gray-700">Title</label>
-            <input value={form.title}
-              onChange={e => setForm({ ...form, title: e.target.value })}
-              placeholder="e.g. School closed on Friday" required
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm
-                         focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700">Message</label>
-            <textarea value={form.body}
-              onChange={e => setForm({ ...form, body: e.target.value })}
-              placeholder="Write your announcement here…" rows={4} required
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm
-                         focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Target Audience</label>
-              <select value={form.target_role}
-                onChange={e => setForm({ ...form, target_role: e.target.value })}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm
-                           focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="all">Everyone</option>
-                <option value="teacher">Teachers only</option>
-                <option value="student">Students only</option>
-                <option value="parent">Parents only</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Priority</label>
-              <select value={form.priority}
-                onChange={e => setForm({ ...form, priority: e.target.value })}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm
-                           focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="low">Low</option>
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700">
-              Target Class <span className="text-gray-400 font-normal">(optional)</span>
-            </label>
-            <select value={form.target_class}
-              onChange={e => setForm({ ...form, target_class: e.target.value })}
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm
-                         focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="">All classes</option>
-              {classes.map(c => (
-                <option key={c.id} value={c.id}>{c.name} — {c.section}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg">
-            <input type="checkbox" id="send_email" checked={form.send_email}
-              onChange={e => setForm({ ...form, send_email: e.target.checked })}
-              className="mt-0.5 w-4 h-4 accent-blue-600" />
-            <label htmlFor="send_email" className="text-sm text-blue-700">
-              Also send email notification to target audience
-              <span className="block text-xs text-blue-500 mt-0.5">
-                Recipients will receive this via Gmail SMTP
-              </span>
-            </label>
-          </div>
-
-          {isEdit && (
-            <div className="flex items-center gap-2">
-              <input type="checkbox" id="is_active" checked={form.is_active}
-                onChange={e => setForm({ ...form, is_active: e.target.checked })}
-                className="w-4 h-4 accent-blue-600" />
-              <label htmlFor="is_active" className="text-sm text-gray-700">
-                Active (visible to users)
-              </label>
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-1">
-            <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-              Cancel
-            </button>
-            <button type="submit" disabled={mutation.isPending}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm
-                         hover:bg-blue-700 disabled:opacity-50">
-              {mutation.isPending ? 'Posting…' : isEdit ? 'Update' : 'Post Announcement'}
-            </button>
-          </div>
-        </form>
       </div>
-    </div>
+    </Modal>
   )
 }
 
-/* ── Announcement Card ── */
-function AnnouncementCard({ ann, onEdit, onDelete, isAdmin }) {
+function AnnouncementCard({ ann, onEdit, onDelete }) {
   const [expanded, setExpanded] = useState(false)
-  const p = PRIORITY_STYLES[ann.priority] || PRIORITY_STYLES.normal
+  const cfg = PRIORITY_CONFIG[ann.priority] || PRIORITY_CONFIG.normal
+  const Icon = cfg.icon
 
   return (
-    <div className={`bg-white border rounded-xl p-5 transition-all
-      ${ann.priority === 'urgent' ? 'border-red-200 shadow-sm'
-        : ann.priority === 'high'  ? 'border-orange-200'
-        : 'border-gray-200'}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3 flex-1 min-w-0">
-
-          {/* priority icon */}
-          <div className={`mt-1 shrink-0 ${p.iconCls}`}>
-            <Icon d={p.icon} size={16} />
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} layout>
+      <Card className={`!border ${cfg.border} ${!ann.is_active ? 'opacity-60' : ''}`}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className="mt-0.5 shrink-0"><Icon size={16} className={`text-${cfg.variant === 'danger' ? 'red' : cfg.variant === 'warning' ? 'amber' : 'slate'}-500`} /></div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                <h3 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">{ann.title}</h3>
+                <Badge variant={cfg.variant}>{ann.priority}</Badge>
+                <Badge variant="default">→ {ROLE_LABELS[ann.target_role]}</Badge>
+                {ann.class_name && <Badge variant="purple">{ann.class_name} {ann.class_section}</Badge>}
+                {!ann.is_active && <Badge variant="default"><EyeOff size={10} className="mr-1" />Hidden</Badge>}
+              </div>
+              <p className={`text-sm text-slate-600 dark:text-slate-400 leading-relaxed ${!expanded ? 'line-clamp-2' : ''}`}>{ann.body}</p>
+              {ann.body.length > 120 && (
+                <button onClick={() => setExpanded(!expanded)} className="text-xs text-primary-600 dark:text-primary-400 mt-1 hover:underline">
+                  {expanded ? 'Show less' : 'Read more'}
+                </button>
+              )}
+              <div className="flex items-center gap-3 mt-2">
+                <span className="text-xs text-slate-400">By {ann.created_by_name || 'Admin'}</span>
+                <span className="text-slate-300 dark:text-slate-600 text-xs">·</span>
+                <span className="text-xs text-slate-400">{new Date(ann.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+              </div>
+            </div>
           </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-              <h3 className="font-semibold text-gray-800 text-sm">{ann.title}</h3>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${p.badge}`}>
-                {p.label}
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-500">
-                → {ROLE_LABELS[ann.target_role]}
-              </span>
-              {ann.class_name && (
-                <span className="px-2 py-0.5 rounded-full text-xs bg-purple-50 text-purple-700">
-                  {ann.class_name} {ann.class_section}
-                </span>
-              )}
-              {!ann.is_active && (
-                <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-400">
-                  Hidden
-                </span>
-              )}
-            </div>
-
-            <p className={`text-sm text-gray-600 leading-relaxed ${!expanded ? 'line-clamp-2' : ''}`}>
-              {ann.body}
-            </p>
-
-            {ann.body.length > 120 && (
-              <button onClick={() => setExpanded(!expanded)}
-                className="text-xs text-blue-500 mt-1 hover:underline">
-                {expanded ? 'Show less' : 'Read more'}
-              </button>
-            )}
-
-            <div className="flex items-center gap-3 mt-2">
-              <span className="text-xs text-gray-400">By {ann.created_by_name || 'Admin'}</span>
-              <span className="text-gray-300 text-xs">·</span>
-              <span className="text-xs text-gray-400">
-                {new Date(ann.created_at).toLocaleDateString('en-IN', {
-                  day: '2-digit', month: 'short', year: 'numeric',
-                })}
-              </span>
-            </div>
+          <div className="flex gap-2 shrink-0">
+            <Button size="sm" variant="outline" leftIcon={<Pencil size={12} />} onClick={() => onEdit(ann)}>Edit</Button>
+            <Button size="sm" variant="danger" leftIcon={<Trash2 size={12} />} onClick={() => onDelete(ann.id)}>Delete</Button>
           </div>
         </div>
-
-        {isAdmin && (
-          <div className="flex gap-2 shrink-0">
-            <button onClick={() => onEdit(ann)}
-              className="text-xs px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50">
-              Edit
-            </button>
-            <button onClick={() => onDelete(ann.id)}
-              className="text-xs px-3 py-1 border border-red-200 text-red-500 rounded-lg hover:bg-red-50">
-              Delete
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+      </Card>
+    </motion.div>
   )
 }
 
-/* ── Main Page ── */
 export default function Announcements() {
   const qc = useQueryClient()
-  const [modal,           setModal]           = useState(null)
-  const [filterRole,      setFilterRole]      = useState('')
-  const [filterPriority,  setFilterPriority]  = useState('')
+  const [modal, setModal]                   = useState(null)
+  const [filterRole, setFilterRole]         = useState('')
+  const [filterPriority, setFilterPriority] = useState('')
 
-  const { data: announcements = [], isLoading } = useQuery({
-    queryKey: ['announcements'],
-    queryFn:  fetchAnnouncements,
-  })
+  const { data: announcements = [], isLoading } = useQuery({ queryKey: ['announcements'], queryFn: fetchAnnouncements })
 
   const deleteMutation = useMutation({
     mutationFn: deleteAnnouncement,
-    onSuccess:  () => qc.invalidateQueries({ queryKey: ['announcements'] }),
-    onError:    (err) => alert(err.response?.data?.error || 'Delete failed.'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['announcements'] }),
+    onError: (err) => alert(err.response?.data?.error || 'Delete failed.'),
   })
 
-  const handleDelete = (id) => {
-    if (confirm('Delete this announcement?')) deleteMutation.mutate(id)
-  }
+  const handleDelete = (id) => { if (confirm('Delete this announcement?')) deleteMutation.mutate(id) }
 
   const filtered = announcements.filter(a => {
-    if (filterRole     && a.target_role !== filterRole)     return false
-    if (filterPriority && a.priority    !== filterPriority) return false
+    if (filterRole && a.target_role !== filterRole) return false
+    if (filterPriority && a.priority !== filterPriority) return false
     return true
   })
 
@@ -298,83 +160,77 @@ export default function Announcements() {
 
   return (
     <DashboardLayout title="Announcements">
-      <div className="p-6">
-
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-800">Announcements</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Manage school-wide notices and alerts</p>
+            <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 font-display">Announcements</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Manage school-wide notices and alerts</p>
           </div>
-          <button onClick={() => setModal('add')}
-            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
-            + New Announcement
-          </button>
+          <Button leftIcon={<Plus size={15} />} onClick={() => setModal('add')}>New Announcement</Button>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Total',  value: announcements.length,                          color: 'text-gray-800'  },
-            { label: 'Urgent', value: urgentCount,                                   color: 'text-red-600'   },
-            { label: 'Active', value: announcements.filter(a => a.is_active).length, color: 'text-green-600' },
-            { label: 'Hidden', value: announcements.filter(a => !a.is_active).length,color: 'text-gray-400'  },
-          ].map(s => (
-            <div key={s.label} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-              <p className="text-xs text-gray-500">{s.label}</p>
-              <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
-            </div>
+            { label: 'Total',  value: announcements.length,                          icon: Megaphone,    gradient: 'from-violet-500 to-purple-600' },
+            { label: 'Urgent', value: urgentCount,                                   icon: AlertTriangle,gradient: 'from-red-400 to-rose-600'      },
+            { label: 'Active', value: announcements.filter(a => a.is_active).length, icon: Eye,          gradient: 'from-emerald-500 to-teal-600'  },
+            { label: 'Hidden', value: announcements.filter(a => !a.is_active).length,icon: EyeOff,       gradient: 'from-slate-400 to-slate-600'   },
+          ].map((s, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
+              <Card className="flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.gradient} flex items-center justify-center shrink-0`}>
+                  <s.icon size={18} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-display">{s.value}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{s.label}</p>
+                </div>
+              </Card>
+            </motion.div>
           ))}
         </div>
 
         {/* Filters */}
-        <div className="flex gap-3 mb-5 flex-wrap">
-          <select value={filterRole} onChange={e => setFilterRole(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm
-                       focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <div className="flex gap-3 flex-wrap">
+          <Select value={filterRole} onChange={e => setFilterRole(e.target.value)} containerClass="w-40">
             <option value="">All Audiences</option>
             <option value="all">Everyone</option>
             <option value="teacher">Teachers</option>
             <option value="student">Students</option>
             <option value="parent">Parents</option>
-          </select>
-
-          <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm
-                       focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </Select>
+          <Select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} containerClass="w-40">
             <option value="">All Priorities</option>
             <option value="urgent">Urgent</option>
             <option value="high">High</option>
             <option value="normal">Normal</option>
             <option value="low">Low</option>
-          </select>
+          </Select>
         </div>
 
         {/* List */}
         {isLoading ? (
-          <p className="text-gray-400 text-sm text-center py-16">Loading announcements…</p>
+          <Card><p className="text-sm text-slate-400 text-center py-16">Loading announcements…</p></Card>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="flex justify-center mb-3 text-gray-300">
-              <Icon d={ICONS.empty} size={48} />
+          <Card>
+            <div className="flex flex-col items-center gap-2 py-12 text-slate-400">
+              <Megaphone size={40} className="opacity-30" />
+              <p className="text-sm">No announcements found.</p>
             </div>
-            <p className="text-gray-400 text-sm">No announcements found.</p>
-          </div>
+          </Card>
         ) : (
           <div className="space-y-3">
-            {filtered.map(ann => (
-              <AnnouncementCard key={ann.id} ann={ann} isAdmin={true}
-                onEdit={setModal} onDelete={handleDelete} />
-            ))}
+            <AnimatePresence>
+              {filtered.map(ann => (
+                <AnnouncementCard key={ann.id} ann={ann} onEdit={setModal} onDelete={handleDelete} />
+              ))}
+            </AnimatePresence>
           </div>
         )}
 
-        {modal && (
-          <AnnouncementModal
-            onClose={() => setModal(null)}
-            existing={modal === 'add' ? null : modal}
-          />
-        )}
+        {modal === 'add' && <AnnouncementModal onClose={() => setModal(null)} />}
+        {modal && modal !== 'add' && <AnnouncementModal existing={modal} onClose={() => setModal(null)} />}
       </div>
     </DashboardLayout>
   )

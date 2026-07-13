@@ -1,395 +1,190 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  fetchTeachers,
-  createTeacher,
-  updateTeacher,
-  setTeacherStatus,
-} from "../../api/teachers.api";
-import DashboardLayout from "../../components/DashboardLayout";
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { fetchTeachers, createTeacher, updateTeacher, setTeacherStatus } from '../../api/teachers.api'
+import DashboardLayout from '../../components/DashboardLayout'
+import DataTable from '../../components/ui/DataTable'
+import Modal from '../../components/ui/Modal'
+import Button from '../../components/ui/Button'
+import { Input } from '../../components/ui/Input'
+import { StatusBadge } from '../../components/ui/Badge'
+import Card from '../../components/ui/Card'
+import { UserPlus, UserRound, Users, UserX, Pencil, AlertCircle, ToggleLeft, ToggleRight } from 'lucide-react'
+import { motion } from 'framer-motion'
 
-// ── Add Teacher Modal ─────────────────────────────────────────────────
+function ErrorAlert({ msg }) {
+  if (!msg) return null
+  return (
+    <div className="flex items-center gap-2 p-3 mb-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl text-sm text-red-600 dark:text-red-400">
+      <AlertCircle size={14} className="shrink-0" />{msg}
+    </div>
+  )
+}
+
 function AddTeacherModal({ onClose }) {
-  const qc = useQueryClient();
-
+  const qc = useQueryClient()
   const [form, setForm] = useState({
-    name: "", email: "", password: "",
-    qualification: "", joining_date: new Date().toISOString().split("T")[0],
-    salary: "",
-  });
-  const [error, setError] = useState("");
-
+    name: '', email: '', password: '',
+    qualification: '', joining_date: new Date().toISOString().split('T')[0], salary: '',
+  })
+  const [error, setError] = useState('')
   const mutation = useMutation({
     mutationFn: createTeacher,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["teachers"] });
-      onClose();
-    },
-    onError: (err) =>
-      setError(err.response?.data?.error || "Something went wrong."),
-  });
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['teachers'] }); onClose() },
+    onError: (err) => setError(err.response?.data?.error || 'Something went wrong.'),
+  })
+  const f = (key) => ({ value: form[key], onChange: (e) => setForm({ ...form, [key]: e.target.value }) })
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
-        <h2 className="text-lg font-semibold mb-4">Add New Teacher</h2>
-
-        {error && (
-          <p className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 p-2 rounded-lg">
-            {error}
-          </p>
-        )}
-
-        <form
-          onSubmit={(e) => { e.preventDefault(); setError(""); mutation.mutate(form); }}
-          className="space-y-3"
-        >
-          <div>
-            <label className="text-sm font-medium text-gray-700">Full Name</label>
-            <input
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              required
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Login Email</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                required
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Temporary Password</label>
-              <input
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                required
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700">Qualification</label>
-            <input
-              value={form.qualification}
-              onChange={(e) => setForm({ ...form, qualification: e.target.value })}
-              placeholder="e.g. M.Sc Mathematics, B.Ed"
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Joining Date</label>
-              <input
-                type="date"
-                value={form.joining_date}
-                onChange={(e) => setForm({ ...form, joining_date: e.target.value })}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Salary (₹/mo)</label>
-              <input
-                type="number"
-                min="0"
-                value={form.salary}
-                onChange={(e) => setForm({ ...form, salary: e.target.value })}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-              Cancel
-            </button>
-            <button type="submit" disabled={mutation.isPending}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
-              {mutation.isPending ? "Creating..." : "Create Teacher"}
-            </button>
-          </div>
-        </form>
+    <Modal open onClose={onClose} title="Add New Teacher" subtitle="Create a teacher account" size="sm"
+      footer={<>
+        <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <Button loading={mutation.isPending} onClick={() => { setError(''); mutation.mutate(form) }}>Create Teacher</Button>
+      </>}
+    >
+      <ErrorAlert msg={error} />
+      <div className="space-y-3">
+        <Input label="Full Name" required {...f('name')} placeholder="Teacher's full name" />
+        <div className="grid grid-cols-2 gap-3">
+          <Input label="Login Email" type="email" required {...f('email')} />
+          <Input label="Temp Password" required {...f('password')} />
+        </div>
+        <Input label="Qualification" {...f('qualification')} placeholder="e.g. M.Ed, B.Sc" />
+        <div className="grid grid-cols-2 gap-3">
+          <Input label="Joining Date" type="date" {...f('joining_date')} />
+          <Input label="Salary (₹)" type="number" {...f('salary')} />
+        </div>
       </div>
-    </div>
-  );
+    </Modal>
+  )
 }
 
-// ── Edit Teacher Modal ────────────────────────────────────────────────
 function EditTeacherModal({ onClose, teacher }) {
-  const qc = useQueryClient();
-
+  const qc = useQueryClient()
   const [form, setForm] = useState({
-    name:          teacher.name || "",
-    qualification: teacher.qualification || "",
-    joining_date:  teacher.joining_date?.split("T")[0] || "",
-    salary:        teacher.salary || "",
-  });
-  const [error, setError] = useState("");
-
+    qualification: teacher.qualification || '',
+    salary: teacher.salary || '',
+    joining_date: teacher.joining_date?.split('T')[0] || '',
+  })
+  const [error, setError] = useState('')
   const mutation = useMutation({
     mutationFn: (data) => updateTeacher(teacher.id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["teachers"] });
-      onClose();
-    },
-    onError: (err) =>
-      setError(err.response?.data?.error || "Something went wrong."),
-  });
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['teachers'] }); onClose() },
+    onError: (err) => setError(err.response?.data?.error || 'Something went wrong.'),
+  })
+  const f = (key) => ({ value: form[key], onChange: (e) => setForm({ ...form, [key]: e.target.value }) })
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
-        <h2 className="text-lg font-semibold mb-1">Edit Teacher</h2>
-        <p className="text-sm text-gray-500 mb-4">{teacher.email}</p>
-
-        {error && (
-          <p className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 p-2 rounded-lg">
-            {error}
-          </p>
-        )}
-
-        <form
-          onSubmit={(e) => { e.preventDefault(); setError(""); mutation.mutate(form); }}
-          className="space-y-3"
-        >
-          <div>
-            <label className="text-sm font-medium text-gray-700">Full Name</label>
-            <input
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              required
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700">Qualification</label>
-            <input
-              value={form.qualification}
-              onChange={(e) => setForm({ ...form, qualification: e.target.value })}
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Joining Date</label>
-              <input
-                type="date"
-                value={form.joining_date}
-                onChange={(e) => setForm({ ...form, joining_date: e.target.value })}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Salary (₹/mo)</label>
-              <input
-                type="number"
-                min="0"
-                value={form.salary}
-                onChange={(e) => setForm({ ...form, salary: e.target.value })}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-              Cancel
-            </button>
-            <button type="submit" disabled={mutation.isPending}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
-              {mutation.isPending ? "Saving..." : "Save Changes"}
-            </button>
-          </div>
-        </form>
+    <Modal open onClose={onClose} title="Edit Teacher" subtitle={`${teacher.name} · ${teacher.email}`} size="sm"
+      footer={<>
+        <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <Button loading={mutation.isPending} onClick={() => { setError(''); mutation.mutate(form) }}>Save Changes</Button>
+      </>}
+    >
+      <ErrorAlert msg={error} />
+      <div className="space-y-3">
+        <Input label="Qualification" {...f('qualification')} />
+        <div className="grid grid-cols-2 gap-3">
+          <Input label="Joining Date" type="date" {...f('joining_date')} />
+          <Input label="Salary (₹)" type="number" {...f('salary')} />
+        </div>
       </div>
-    </div>
-  );
+    </Modal>
+  )
 }
 
-// ── Main Page ──────────────────────────────────────────────────────────
 export default function Teachers() {
-  const qc = useQueryClient();
-  const [modal, setModal] = useState(null); // null | 'add' | teacherObj
-  const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("active");
-
-  const { data: teachers = [], isLoading } = useQuery({
-    queryKey: ["teachers"],
-    queryFn: fetchTeachers,
-  });
+  const qc = useQueryClient()
+  const [modal, setModal] = useState(null)
+  const { data: teachers = [], isLoading } = useQuery({ queryKey: ['teachers'], queryFn: fetchTeachers })
 
   const statusMutation = useMutation({
     mutationFn: ({ id, is_active }) => setTeacherStatus(id, is_active),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["teachers"] }),
-    onError: (err) => alert(err.response?.data?.error || "Failed to update status."),
-  });
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['teachers'] }),
+    onError: (err) => alert(err.response?.data?.error || 'Failed.'),
+  })
 
-  const handleToggleStatus = (teacher) => {
-    const msg = teacher.is_active
-      ? `Deactivate ${teacher.name}? They will lose login access immediately. All attendance/marks/timetable history stays intact, and this is reversible any time.`
-      : `Reactivate ${teacher.name}'s account?`;
-    if (confirm(msg)) {
-      statusMutation.mutate({ id: teacher.id, is_active: !teacher.is_active });
-    }
-  };
+  const handleToggle = (t) => {
+    if (confirm(t.is_active ? `Deactivate ${t.name}?` : `Reactivate ${t.name}?`))
+      statusMutation.mutate({ id: t.id, is_active: !t.is_active })
+  }
 
-  const filtered = teachers.filter((t) => {
-    if (filterStatus === "active" && !t.is_active) return false;
-    if (filterStatus === "inactive" && t.is_active) return false;
-    if (search && !`${t.name} ${t.email} ${t.qualification || ""}`.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
+  const activeCount = teachers.filter(t => t.is_active).length
 
-  const activeCount   = teachers.filter((t) => t.is_active).length;
-  const inactiveCount = teachers.filter((t) => !t.is_active).length;
+  const columns = [
+    {
+      header: 'Teacher', key: 'name',
+      render: (_, t) => (
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+            {t.name?.charAt(0)?.toUpperCase()}
+          </div>
+          <div>
+            <p className="font-medium text-slate-800 dark:text-slate-100">{t.name}</p>
+            <p className="text-xs text-slate-400">{t.email}</p>
+          </div>
+        </div>
+      ),
+    },
+    { header: 'Qualification', key: 'qualification', render: v => v || '—' },
+    { header: 'Joining Date', key: 'joining_date', render: v => v ? new Date(v).toLocaleDateString('en-IN') : '—' },
+    { header: 'Salary', key: 'salary', render: v => v ? `₹${parseFloat(v).toLocaleString('en-IN')}` : '—' },
+    { header: 'Status', key: 'is_active', sortable: false, render: v => <StatusBadge status={v ? 'active' : 'inactive'} /> },
+    {
+      header: 'Actions', key: 'id', sortable: false,
+      render: (_, t) => (
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" leftIcon={<Pencil size={12} />} onClick={() => setModal(t)}>Edit</Button>
+          <Button size="sm" variant={t.is_active ? 'danger' : 'success'}
+            leftIcon={t.is_active ? <ToggleLeft size={12} /> : <ToggleRight size={12} />}
+            onClick={() => handleToggle(t)}>
+            {t.is_active ? 'Deactivate' : 'Reactivate'}
+          </Button>
+        </div>
+      ),
+    },
+  ]
+
+  const statCards = [
+    { label: 'Total Teachers', value: teachers.length, icon: UserRound, gradient: 'from-blue-500 to-indigo-600'   },
+    { label: 'Active',         value: activeCount,       icon: Users,     gradient: 'from-emerald-500 to-teal-600' },
+    { label: 'Deactivated',    value: teachers.length - activeCount, icon: UserX, gradient: 'from-slate-400 to-slate-600' },
+  ]
 
   return (
     <DashboardLayout title="Teachers">
-      <div className="p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-800">Teachers</h1>
-            <p className="text-sm text-gray-500 mt-0.5">
-              Manage teaching staff accounts
-            </p>
+            <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 font-display">Teachers</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Manage teaching staff accounts</p>
           </div>
-          <button
-            onClick={() => setModal("add")}
-            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
-          >
-            + Add Teacher
-          </button>
+          <Button leftIcon={<UserPlus size={15} />} onClick={() => setModal('add')}>Add Teacher</Button>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-            <p className="text-xs text-gray-500">Total Teachers</p>
-            <p className="text-2xl font-semibold text-gray-800 mt-1">{teachers.length}</p>
-          </div>
-          <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-            <p className="text-xs text-green-600">Active</p>
-            <p className="text-2xl font-semibold text-green-700 mt-1">{activeCount}</p>
-          </div>
-          <div className="bg-gray-100 rounded-xl p-4 border border-gray-200">
-            <p className="text-xs text-gray-500">Deactivated</p>
-            <p className="text-2xl font-semibold text-gray-600 mt-1">{inactiveCount}</p>
-          </div>
+        <div className="grid grid-cols-3 gap-4">
+          {statCards.map((s, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
+              <Card className="flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.gradient} flex items-center justify-center shrink-0`}>
+                  <s.icon size={18} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-display">{s.value}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{s.label}</p>
+                </div>
+              </Card>
+            </motion.div>
+          ))}
         </div>
 
-        {/* Filters */}
-        <div className="flex gap-3 mb-4 flex-wrap">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name, email, qualification..."
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm w-72 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="active">Active only</option>
-            <option value="inactive">Deactivated only</option>
-            <option value="">All</option>
-          </select>
-        </div>
+        <DataTable columns={columns} data={teachers} loading={isLoading}
+          searchKeys={['name', 'email', 'qualification']} pageSize={12}
+          emptyState={<div className="flex flex-col items-center gap-2 py-8 text-slate-400"><UserRound size={32} className="opacity-30" /><p className="text-sm">No teachers found</p></div>}
+        />
 
-        {/* Table */}
-        {isLoading ? (
-          <p className="text-gray-400 text-sm">Loading teachers...</p>
-        ) : (
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
-                <tr>
-                  <th className="text-left px-5 py-3">Teacher</th>
-                  <th className="text-left px-5 py-3">Qualification</th>
-                  <th className="text-left px-5 py-3">Joining Date</th>
-                  <th className="text-right px-5 py-3">Salary</th>
-                  <th className="text-center px-4 py-3">Status</th>
-                  <th className="text-left px-5 py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-8 text-gray-400">
-                      No teachers found.
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map((t) => (
-                    <tr key={t.id} className={`hover:bg-gray-50 ${!t.is_active ? "opacity-60" : ""}`}>
-                      <td className="px-5 py-3">
-                        <p className="font-medium text-gray-800">{t.name}</p>
-                        <p className="text-xs text-gray-400">{t.email}</p>
-                      </td>
-                      <td className="px-5 py-3 text-gray-600">{t.qualification || "—"}</td>
-                      <td className="px-5 py-3 text-gray-600">
-                        {t.joining_date ? new Date(t.joining_date).toLocaleDateString("en-IN") : "—"}
-                      </td>
-                      <td className="px-5 py-3 text-right text-gray-700">
-                        {t.salary ? `₹${parseFloat(t.salary).toLocaleString("en-IN")}` : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          t.is_active
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-200 text-gray-500"
-                        }`}>
-                          {t.is_active ? "Active" : "Deactivated"}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setModal(t)}
-                            className="text-xs px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleToggleStatus(t)}
-                            className={`text-xs px-3 py-1 border rounded-lg ${
-                              t.is_active
-                                ? "border-red-200 text-red-500 hover:bg-red-50"
-                                : "border-green-200 text-green-600 hover:bg-green-50"
-                            }`}
-                          >
-                            {t.is_active ? "Deactivate" : "Reactivate"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Modals */}
-        {modal === "add" && <AddTeacherModal onClose={() => setModal(null)} />}
-        {modal && modal !== "add" && (
-          <EditTeacherModal teacher={modal} onClose={() => setModal(null)} />
-        )}
+        {modal === 'add' && <AddTeacherModal onClose={() => setModal(null)} />}
+        {modal && modal !== 'add' && <EditTeacherModal teacher={modal} onClose={() => setModal(null)} />}
       </div>
     </DashboardLayout>
-  );
+  )
 }

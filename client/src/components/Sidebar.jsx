@@ -1,139 +1,273 @@
-import { NavLink } from 'react-router-dom'
-import { useSelector } from 'react-redux'
+import { useState } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { useSelector, useDispatch } from 'react-redux'
+import { motion, AnimatePresence } from 'framer-motion'
+import { logout } from '../features/auth/authSlice'
+import {
+  LayoutDashboard, Users, GraduationCap, UserRound, BookOpen,
+  BookMarked, Calendar, CalendarDays, FileText, ClipboardList,
+  DollarSign, ReceiptText, AlertTriangle, BarChart3, TrendingDown,
+  Bell, MessageSquare, Library, Bus, ChevronLeft, ChevronRight,
+  LogOut, Settings, Award, ClipboardCheck, PenLine, Building2, Tag,
+} from 'lucide-react'
 
-const Icon = ({ d, size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
-    aria-hidden="true" style={{ flexShrink: 0 }}>
-    {Array.isArray(d) ? d.map((path, i) => <path key={i} d={path} />) : <path d={d} />}
-  </svg>
-)
-
-const ICONS = {
-  dashboard:    'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
-  students:     ['M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2', 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'M23 21v-2a4 4 0 0 0-3-3.87', 'M16 3.13a4 4 0 0 1 0 7.75'],
-  teachers:     ['M22 10v6M2 10l10-5 10 5-10 5z', 'M6 12v5c3 3 9 3 12 0v-5'],
-  parents:      ['M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2', 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'M23 21v-2a4 4 0 0 0-3-3.87', 'M16 3.13a4 4 0 0 1 0 7.75'],
-  classes:      'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10',
-  subjects:     ['M4 19.5A2.5 2.5 0 0 1 6.5 17H20', 'M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'],
-  timetable:    ['M8 2v4', 'M16 2v4', 'M3 10h18', 'M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6z'],
-  exams:        ['M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7', 'M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'],
-  feeStructure: ['M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z', 'M7 7h.01'],
-  feeCollection:'M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
-  outstanding:  ['M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z', 'M12 9v4', 'M12 17h.01'],
-  financeReport:['M18 20V10', 'M12 20V4', 'M6 20v-6'],
-  expenses:     ['M12 2v20', 'M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'],
-  announcements:'M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0',
-  messages:     ['M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'],
-  calendar:     ['M8 2v4', 'M16 2v4', 'M3 10h18', 'M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6z'],
-  library:      ['M4 19.5A2.5 2.5 0 0 1 6.5 17H20', 'M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'],
-  transport:    ['M1 3h15v13H1z', 'M16 8h4l3 3v5h-7V8z', 'M5.5 21a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z', 'M18.5 21a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z'],
-  attendance:   ['M9 11l3 3L22 4', 'M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'],
-  attReport:    ['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z', 'M14 2v6h6', 'M16 13H8', 'M16 17H8', 'M10 9H8'],
-  marks:        ['M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7', 'M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'],
-  results:      ['M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z'],
-  fees:         'M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
-  notices:      ['M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9', 'M13.73 21a2 2 0 0 1-3.46 0'],
-  myFees:       'M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
-  profile:      ['M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2', 'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'],
-}
-
+// ── Nav link definitions ─────────────────────────────────────────────────
 const ADMIN_LINKS = [
-  { to: '/admin/dashboard',        label: 'Dashboard',      icon: 'dashboard'     },
-  { to: '/admin/students',         label: 'Students',       icon: 'students'      },
-  { to: '/admin/teachers',         label: 'Teachers',       icon: 'teachers'      },
-  { to: '/admin/parents',          label: 'Parents',        icon: 'parents'       },
-  { to: '/admin/classes',          label: 'Classes',        icon: 'classes'       },
-  { to: '/admin/subjects',         label: 'Subjects',       icon: 'subjects'      },
-  { to: '/admin/timetable',        label: 'Timetable',      icon: 'timetable'     },
-  { to: '/admin/exams',            label: 'Exams',          icon: 'exams'         },
-  { to: '/admin/fees/structure',   label: 'Fee Structure',  icon: 'feeStructure'  },
-  { to: '/admin/fees/collection',  label: 'Fee Collection', icon: 'feeCollection' },
-  { to: '/admin/fees/outstanding', label: 'Outstanding',    icon: 'outstanding'   },
-  { to: '/admin/financial-report', label: 'Finance Report', icon: 'financeReport' },
-  { to: '/admin/expenses',         label: 'Expenses',       icon: 'expenses'      },
-  { to: '/admin/announcements',    label: 'Announcements',  icon: 'announcements' },
-  { to: '/admin/messages',         label: 'Messages',       icon: 'messages'      },
-  { to: '/admin/calendar',         label: 'Calendar',       icon: 'calendar'      },
-  { to: '/admin/library',          label: 'Library',        icon: 'library'       },
-  { to: '/admin/transport',        label: 'Transport',      icon: 'transport'     },
-  { to: '/admin/profile',          label: 'My Profile',     icon: 'profile'       },
+  { section: 'Overview' },
+  { to: '/admin/dashboard',        label: 'Dashboard',       icon: LayoutDashboard  },
+  { section: 'People' },
+  { to: '/admin/students',         label: 'Students',        icon: GraduationCap    },
+  { to: '/admin/teachers',         label: 'Teachers',        icon: UserRound        },
+  { to: '/admin/parents',          label: 'Parents',         icon: Users            },
+  { section: 'Academics' },
+  { to: '/admin/classes',          label: 'Classes',         icon: Building2        },
+  { to: '/admin/subjects',         label: 'Subjects',        icon: BookMarked       },
+  { to: '/admin/timetable',        label: 'Timetable',       icon: CalendarDays     },
+  { to: '/admin/exams',            label: 'Exams',           icon: FileText         },
+  { section: 'Finance' },
+  { to: '/admin/fees/structure',   label: 'Fee Structure',   icon: Tag              },
+  { to: '/admin/fees/collection',  label: 'Fee Collection',  icon: DollarSign       },
+  { to: '/admin/fees/outstanding', label: 'Outstanding',     icon: AlertTriangle    },
+  { to: '/admin/financial-report', label: 'Finance Report',  icon: BarChart3        },
+  { to: '/admin/expenses',         label: 'Expenses',        icon: TrendingDown     },
+  { section: 'Communication' },
+  { to: '/admin/announcements',    label: 'Announcements',   icon: Bell             },
+  { to: '/admin/messages',         label: 'Messages',        icon: MessageSquare    },
+  { to: '/admin/calendar',         label: 'Calendar',        icon: Calendar         },
+  { section: 'Services' },
+  { to: '/admin/library',          label: 'Library',         icon: Library          },
+  { to: '/admin/transport',        label: 'Transport',       icon: Bus              },
 ]
 
 const TEACHER_LINKS = [
-  { to: '/teacher/dashboard',         label: 'Dashboard',   icon: 'dashboard'     },
-  { to: '/teacher/timetable',         label: 'My Timetable',icon: 'timetable'     },
-  { to: '/teacher/attendance/mark',   label: 'Attendance',  icon: 'attendance'    },
-  { to: '/teacher/attendance/report', label: 'Att. Report', icon: 'attReport'     },
-  { to: '/teacher/marks',             label: 'Enter Marks', icon: 'marks'         },
-  { to: '/teacher/announcements',     label: 'Notices',     icon: 'notices'       },
-  { to: '/teacher/messages',          label: 'Messages',    icon: 'messages'      },
-  { to: '/teacher/calendar',          label: 'Calendar',    icon: 'calendar'      },
-  { to: '/teacher/profile',           label: 'My Profile',  icon: 'profile'       },
+  { section: 'Overview' },
+  { to: '/teacher/dashboard',         label: 'Dashboard',     icon: LayoutDashboard },
+  { section: 'Teaching' },
+  { to: '/teacher/timetable',         label: 'My Timetable',  icon: CalendarDays    },
+  { to: '/teacher/attendance/mark',   label: 'Attendance',    icon: ClipboardCheck  },
+  { to: '/teacher/attendance/report', label: 'Att. Report',   icon: BarChart3       },
+  { to: '/teacher/marks',             label: 'Enter Marks',   icon: PenLine         },
+  { section: 'Communication' },
+  { to: '/teacher/announcements',     label: 'Notices',       icon: Bell            },
+  { to: '/teacher/messages',          label: 'Messages',      icon: MessageSquare   },
+  { to: '/teacher/calendar',          label: 'Calendar',      icon: Calendar        },
 ]
 
 const STUDENT_LINKS = [
-  { to: '/student/dashboard',  label: 'Dashboard',  icon: 'dashboard'     },
-  { to: '/student/timetable',  label: 'Timetable',  icon: 'timetable'     },
-  { to: '/student/attendance', label: 'Attendance', icon: 'attendance'    },
-  { to: '/student/results',    label: 'My Results', icon: 'results'       },
-  { to: '/student/fees',       label: 'My Fees',    icon: 'myFees'        },
-  { to: '/student/notices',    label: 'Notices',    icon: 'notices'       },
-  { to: '/student/messages',   label: 'Messages',   icon: 'messages'      },
-  { to: '/student/calendar',   label: 'Calendar',   icon: 'calendar'      },
-  { to: '/student/library',    label: 'Library',    icon: 'library'       },
-  { to: '/student/transport',  label: 'Transport',  icon: 'transport'     },
-  { to: '/student/profile',    label: 'My Profile', icon: 'profile'       },
+  { section: 'Overview' },
+  { to: '/student/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
+  { section: 'Academics' },
+  { to: '/student/timetable',  label: 'Timetable',  icon: CalendarDays    },
+  { to: '/student/attendance', label: 'Attendance', icon: ClipboardCheck  },
+  { to: '/student/results',    label: 'My Results', icon: Award           },
+  { section: 'Finance & Services' },
+  { to: '/student/fees',       label: 'My Fees',    icon: DollarSign      },
+  { to: '/student/library',    label: 'Library',    icon: Library         },
+  { to: '/student/transport',  label: 'Transport',  icon: Bus             },
+  { section: 'Communication' },
+  { to: '/student/notices',    label: 'Notices',    icon: Bell            },
+  { to: '/student/messages',   label: 'Messages',   icon: MessageSquare   },
+  { to: '/student/calendar',   label: 'Calendar',   icon: Calendar        },
 ]
 
 const PARENT_LINKS = [
-  { to: '/parent/dashboard', label: 'Dashboard', icon: 'dashboard'  },
-  { to: '/parent/notices',   label: 'Notices',   icon: 'notices'    },
-  { to: '/parent/messages',  label: 'Messages',  icon: 'messages'   },
-  { to: '/parent/calendar',  label: 'Calendar',  icon: 'calendar'   },
-  { to: '/parent/transport', label: 'Transport', icon: 'transport'  },
-  { to: '/parent/profile',   label: 'My Profile',icon: 'profile'    },
+  { section: 'Overview' },
+  { to: '/parent/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { section: 'Communication' },
+  { to: '/parent/notices',   label: 'Notices',   icon: Bell            },
+  { to: '/parent/messages',  label: 'Messages',  icon: MessageSquare   },
+  { to: '/parent/calendar',  label: 'Calendar',  icon: Calendar        },
+  { section: 'Services' },
+  { to: '/parent/transport', label: 'Transport', icon: Bus             },
 ]
 
-const LINKS_MAP = {
-  admin:   ADMIN_LINKS,
-  teacher: TEACHER_LINKS,
-  student: STUDENT_LINKS,
-  parent:  PARENT_LINKS,
+const LINKS_MAP = { admin: ADMIN_LINKS, teacher: TEACHER_LINKS, student: STUDENT_LINKS, parent: PARENT_LINKS }
+
+const ROLE_CONFIG = {
+  admin:   { label: 'Administrator', color: 'from-violet-500 to-purple-600'   },
+  teacher: { label: 'Teacher',       color: 'from-blue-500 to-indigo-600'     },
+  student: { label: 'Student',       color: 'from-emerald-500 to-teal-600'    },
+  parent:  { label: 'Parent',        color: 'from-orange-400 to-rose-500'     },
+}
+
+const safeStorage = {
+  getItem: (key) => {
+    try {
+      return localStorage.getItem(key)
+    } catch {
+      return null
+    }
+  },
+  setItem: (key, value) => {
+    try {
+      localStorage.setItem(key, value)
+    } catch {}
+  }
 }
 
 export default function Sidebar() {
-  const { user } = useSelector(state => state.auth)
-  const links    = LINKS_MAP[user?.role] || []
+  const dispatch  = useDispatch()
+  const navigate  = useNavigate()
+  const { user }  = useSelector(state => state.auth)
+  const [collapsed, setCollapsed] = useState(() => {
+    return safeStorage.getItem('sidebar-collapsed') === 'true'
+  })
+
+  const toggleCollapse = () => {
+    setCollapsed(prev => {
+      const next = !prev
+      safeStorage.setItem('sidebar-collapsed', String(next))
+      return next
+    })
+  }
+
+  const links     = LINKS_MAP[user?.role] || []
+  const roleConf  = ROLE_CONFIG[user?.role] || { label: 'User', color: 'from-slate-400 to-slate-600' }
+  const initial   = user?.name?.charAt(0)?.toUpperCase() || '?'
+
+  const handleLogout = () => {
+    dispatch(logout())
+    navigate('/login')
+  }
 
   return (
-    <aside className="w-52 shrink-0 bg-white border-r border-gray-200 flex flex-col h-screen sticky top-0">
-      <div className="h-14 flex items-center px-5 border-b border-gray-200">
-        <span className="text-lg font-bold text-blue-600">SMS</span>
-        <span className="text-xs text-gray-400 ml-2">v1.0</span>
+    <motion.aside
+      style={{ width: collapsed ? 68 : 240 }}
+      animate={{ width: collapsed ? 68 : 240 }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      className="
+        relative shrink-0 h-screen sticky top-0 flex flex-col overflow-visible z-20
+        bg-slate-950 text-slate-300 border-r border-slate-800/50
+      "
+    >
+      {/* ── Logo ── */}
+      <div className="flex items-center h-16 px-4 border-b border-slate-800/70 shrink-0">
+        <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${roleConf.color} flex items-center justify-center shrink-0`}>
+          <GraduationCap size={16} className="text-white" />
+        </div>
+        <AnimatePresence initial={false}>
+          {!collapsed && (
+            <motion.div
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -8 }}
+              transition={{ duration: 0.2 }}
+              className="ml-3 overflow-hidden whitespace-nowrap"
+            >
+              <p className="text-sm font-bold text-white font-display">EduSaaS</p>
+              <p className="text-[10px] text-slate-500">School Management</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-3 px-2">
-        {links.map(link => (
-          <NavLink
-            key={link.to}
-            to={link.to}
-            className={({ isActive }) =>
-              `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm mb-0.5 transition-all
-              ${isActive
-                ? 'bg-blue-600 text-white font-medium'
-                : 'text-gray-600 hover:bg-gray-100'}`
-            }
-          >
-            <Icon d={ICONS[link.icon]} />
-            <span>{link.label}</span>
-          </NavLink>
-        ))}
+      {/* ── Collapse toggle ── */}
+      <button
+        onClick={toggleCollapse}
+        className="
+          absolute top-[4.25rem] -right-3 w-6 h-6 z-10
+          bg-slate-900 border border-slate-700 rounded-full
+          flex items-center justify-center text-slate-400
+          hover:text-white hover:border-primary-500 transition-all duration-200 shadow-md
+        "
+      >
+        {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
+      </button>
+
+      {/* ── Navigation ── */}
+      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5 scrollbar-none">
+        {links.map((link, i) => {
+          // Section header
+          if (link.section) {
+            if (collapsed) return null
+            return (
+              <p key={i} className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-slate-600">
+                {link.section}
+              </p>
+            )
+          }
+
+          const Icon = link.icon
+          return (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              title={collapsed ? link.label : undefined}
+              className={({ isActive }) => `
+                flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm font-medium transition-all duration-150
+                ${isActive
+                  ? 'bg-primary-600/20 text-primary-300 border border-primary-600/30'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }
+              `}
+            >
+              {({ isActive }) => (
+                <>
+                  <Icon
+                    size={17}
+                    className={`shrink-0 transition-colors ${isActive ? 'text-primary-400' : ''}`}
+                  />
+                  <AnimatePresence initial={false}>
+                    {!collapsed && (
+                      <motion.span
+                        initial={{ opacity: 0, x: -6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -6 }}
+                        transition={{ duration: 0.15 }}
+                        className="truncate"
+                      >
+                        {link.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </>
+              )}
+            </NavLink>
+          )
+        })}
       </nav>
 
-      <div className="px-4 py-3 border-t border-gray-200">
-        <p className="text-xs text-gray-400 text-center">School Management System</p>
+      {/* ── User footer ── */}
+      <div className="shrink-0 border-t border-slate-800/70 p-3">
+        {user && (
+          <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
+            <div className={`
+              w-8 h-8 rounded-xl bg-gradient-to-br ${roleConf.color}
+              flex items-center justify-center shrink-0 text-white text-xs font-bold
+            `}>
+              {initial}
+            </div>
+            <AnimatePresence initial={false}>
+              {!collapsed && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex-1 min-w-0"
+                >
+                  <p className="text-xs font-semibold text-slate-200 truncate">{user.name}</p>
+                  <p className="text-[10px] text-slate-500 capitalize">{roleConf.label}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <AnimatePresence initial={false}>
+              {!collapsed && (
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={handleLogout}
+                  title="Logout"
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                >
+                  <LogOut size={14} />
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
       </div>
-    </aside>
+    </motion.aside>
   )
 }

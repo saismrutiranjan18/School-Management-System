@@ -3,128 +3,105 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchOutstandingDues } from '../../api/fees.api'
 import { fetchClasses } from '../../api/classes.api'
 import DashboardLayout from '../../components/DashboardLayout'
-
-const Icon = ({ d, size = 18, className = '' }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"
-    strokeLinejoin="round" aria-hidden="true"
-    className={className} style={{ flexShrink: 0 }}>
-    {Array.isArray(d) ? d.map((p, i) => <path key={i} d={p} />) : <path d={d} />}
-  </svg>
-)
-
-const ICONS = {
-  check: ['M22 11.08V12a10 10 0 1 1-5.93-9.14', 'M22 4 12 14.01l-3-3'],
-  dues:  ['M12 2v20', 'M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'],
-}
+import DataTable from '../../components/ui/DataTable'
+import { Select } from '../../components/ui/Input'
+import { StatusBadge } from '../../components/ui/Badge'
+import Card from '../../components/ui/Card'
+import EmptyState from '../../components/ui/EmptyState'
+import { AlertTriangle, DollarSign, Users, CheckCircle2 } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 export default function OutstandingDues() {
   const [filterClass, setFilterClass] = useState('')
 
-  const { data: classes = [] } = useQuery({
-    queryKey: ['classes'],
-    queryFn:  fetchClasses,
-  })
-
+  const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: fetchClasses })
   const { data, isLoading } = useQuery({
     queryKey: ['outstanding', filterClass],
-    queryFn:  () => fetchOutstandingDues({ class_id: filterClass || undefined }),
+    queryFn: () => fetchOutstandingDues({ class_id: filterClass || undefined }),
   })
+
+  const students = data?.students || []
+  const total    = parseFloat(data?.total_outstanding || 0)
+  const count    = data?.count || 0
+
+  const columns = [
+    {
+      header: 'Student', key: 'name',
+      render: (_, s) => (
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+            {s.name?.charAt(0)?.toUpperCase()}
+          </div>
+          <div>
+            <p className="font-medium text-slate-800 dark:text-slate-100">{s.name}</p>
+            <p className="text-xs text-slate-400">Roll: {s.roll_no || '—'}</p>
+          </div>
+        </div>
+      ),
+    },
+    { header: 'Class', key: 'class_name', render: (_, s) => `${s.class_name} — ${s.section}` },
+    {
+      header: 'Total Due', key: 'total_due',
+      render: v => <span className="text-slate-700 dark:text-slate-300">₹{v.toLocaleString('en-IN')}</span>,
+    },
+    {
+      header: 'Paid', key: 'total_paid',
+      render: v => <span className="text-emerald-600 dark:text-emerald-400 font-medium">₹{v.toLocaleString('en-IN')}</span>,
+    },
+    {
+      header: 'Balance', key: 'balance',
+      render: v => <span className="text-red-600 dark:text-red-400 font-bold">₹{v.toLocaleString('en-IN')}</span>,
+    },
+    { header: 'Status', key: 'status', sortable: false, render: v => <StatusBadge status={v} /> },
+  ]
 
   return (
     <DashboardLayout title="Outstanding Dues">
-      <div className="p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-800">Outstanding Dues</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Students with pending fee balance</p>
+      <div className="p-6 space-y-6">
+        <div>
+          <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 font-display">Outstanding Dues</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Students with pending fee balance</p>
         </div>
 
-        {data && (
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-              <p className="text-xs text-red-500">Total Outstanding</p>
-              <p className="text-2xl font-bold text-red-600 mt-1">
-                ₹{parseFloat(data.total_outstanding).toLocaleString('en-IN')}
-              </p>
-            </div>
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-              <p className="text-xs text-gray-500">Students with Dues</p>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{data.count}</p>
-            </div>
-          </div>
-        )}
-
-        <select
-          value={filterClass}
-          onChange={e => setFilterClass(e.target.value)}
-          className="mb-4 px-3 py-2 border border-gray-300 rounded-lg text-sm
-                     focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">All Classes</option>
-          {classes.map(c => (
-            <option key={c.id} value={c.id}>{c.name} — {c.section}</option>
+        <div className="grid grid-cols-2 gap-4">
+          {[
+            { label: 'Total Outstanding', value: `₹${total.toLocaleString('en-IN')}`, icon: DollarSign, gradient: 'from-red-400 to-rose-600' },
+            { label: 'Students with Dues', value: count, icon: Users, gradient: 'from-orange-400 to-amber-500' },
+          ].map((s, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
+              <Card className="flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.gradient} flex items-center justify-center shrink-0`}>
+                  <s.icon size={18} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-display">{s.value}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{s.label}</p>
+                </div>
+              </Card>
+            </motion.div>
           ))}
-        </select>
+        </div>
 
-        {isLoading ? (
-          <p className="text-gray-400 text-sm">Loading…</p>
-        ) : (
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
-                <tr>
-                  <th className="text-left px-5 py-3">Student</th>
-                  <th className="text-left px-5 py-3">Class</th>
-                  <th className="text-right px-5 py-3">Total Due</th>
-                  <th className="text-right px-5 py-3">Paid</th>
-                  <th className="text-right px-5 py-3">Balance</th>
-                  <th className="text-center px-5 py-3">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {data?.students?.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-12">
-                      <div className="flex flex-col items-center gap-2 text-gray-400">
-                        <Icon d={ICONS.check} size={36} className="text-green-400" />
-                        <span className="text-sm">No outstanding dues!</span>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  data?.students?.map(s => (
-                    <tr key={s.student_id} className="hover:bg-gray-50">
-                      <td className="px-5 py-3">
-                        <p className="font-medium text-gray-800">{s.name}</p>
-                        <p className="text-xs text-gray-400">Roll: {s.roll_no || '—'}</p>
-                      </td>
-                      <td className="px-5 py-3 text-gray-600">
-                        {s.class_name} — {s.section}
-                      </td>
-                      <td className="px-5 py-3 text-right text-gray-700">
-                        ₹{s.total_due.toLocaleString('en-IN')}
-                      </td>
-                      <td className="px-5 py-3 text-right text-green-600">
-                        ₹{s.total_paid.toLocaleString('en-IN')}
-                      </td>
-                      <td className="px-5 py-3 text-right font-bold text-red-500">
-                        ₹{s.balance.toLocaleString('en-IN')}
-                      </td>
-                      <td className="px-5 py-3 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize
-                          ${s.status === 'partial'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-red-100 text-red-600'}`}>
-                          {s.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <DataTable
+          columns={columns}
+          data={students}
+          loading={isLoading}
+          searchKeys={['name', 'roll_no', 'class_name']}
+          pageSize={15}
+          actions={
+            <Select value={filterClass} onChange={e => setFilterClass(e.target.value)} className="h-9 text-sm">
+              <option value="">All Classes</option>
+              {classes.map(c => <option key={c.id} value={c.id}>{c.name} — {c.section}</option>)}
+            </Select>
+          }
+          emptyState={
+            <EmptyState
+              icon={CheckCircle2}
+              title="All clear!"
+              description="No outstanding dues found."
+            />
+          }
+        />
       </div>
     </DashboardLayout>
   )

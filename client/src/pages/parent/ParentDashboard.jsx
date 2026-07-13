@@ -1,24 +1,14 @@
-import { useQuery }      from '@tanstack/react-query'
+import { useQuery }    from '@tanstack/react-query'
 import { fetchDashboard } from '../../api/analytics.api'
-import DashboardLayout   from '../../components/DashboardLayout'
-
-const Icon = ({ d, size = 18, className = '' }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"
-    strokeLinejoin="round" aria-hidden="true"
-    className={className} style={{ flexShrink: 0 }}>
-    {Array.isArray(d) ? d.map((p, i) => <path key={i} d={p} />) : <path d={d} />}
-  </svg>
-)
-
-const ICONS = {
-  attendance: ['M9 11l3 3L22 4','M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'],
-  fees:       ['M12 2v20','M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'],
-  results:    ['M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z'],
-  notice:     ['M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9','M13.73 21a2 2 0 0 1-3.46 0'],
-  warning:    ['M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z','M12 9v4','M12 17h.01'],
-  family:     ['M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2','M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z','M23 21v-2a4 4 0 0 0-3-3.87','M16 3.13a4 4 0 0 1 0 7.75'],
-}
+import DashboardLayout from '../../components/DashboardLayout'
+import Card, { CardHeader, CardTitle, CardSubtitle } from '../../components/ui/Card'
+import EmptyState from '../../components/ui/EmptyState'
+import { SkeletonCard } from '../../components/ui/Skeleton'
+import { motion } from 'framer-motion'
+import {
+  ClipboardCheck, DollarSign, Award, Bell, AlertCircle,
+  Users, ArrowUpRight,
+} from 'lucide-react'
 
 export default function ParentDashboard() {
   const { data, isLoading } = useQuery({
@@ -30,151 +20,212 @@ export default function ParentDashboard() {
 
   if (isLoading) return (
     <DashboardLayout title="Parent Dashboard">
-      <div className="flex items-center justify-center h-64">
-        <p className="text-gray-400 text-sm">Loading…</p>
+      <div className="p-6 space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SkeletonCard /><SkeletonCard />
+        </div>
       </div>
     </DashboardLayout>
   )
 
   if (!child || child.error) return (
     <DashboardLayout title="Parent Dashboard">
-      <div className="p-6 text-center py-16">
-        <div className="flex justify-center mb-3 text-gray-300">
-          <Icon d={ICONS.family} size={48} />
-        </div>
-        <p className="text-sm text-gray-500">No child record linked to your account.</p>
-        <p className="text-xs text-gray-400 mt-1">
-          Contact the school to link your child's profile.
-        </p>
+      <div className="p-6">
+        <Card>
+          <EmptyState
+            icon={Users}
+            title="No child linked"
+            description="Contact the school administration to link your child's profile to this account."
+          />
+        </Card>
       </div>
     </DashboardLayout>
   )
 
-  const student = child.student || {}
-  const att     = child.attendance || {}
+  const student = child.student      || {}
+  const att     = child.attendance   || {}
   const marks   = child.recent_marks || []
-  const fees    = child.fee_status || {}
+  const fees    = child.fee_status   || {}
   const notices = child.announcements || []
   const attPct  = parseFloat(att.percentage || 0)
+  const balance = parseFloat(fees.balance || 0)
+  const isLow   = attPct < 75
+  const hasDue  = balance > 0
 
-  const quickStats = [
+  const statCards = [
     {
-      label:   'Attendance',
-      value:   `${att.percentage || 0}%`,
-      color:   attPct >= 75 ? 'text-green-600' : 'text-red-500',
-      bg:      attPct >= 75 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500',
-      iconKey: 'attendance',
+      label: 'Attendance',
+      value: `${attPct.toFixed(0)}%`,
+      sub:   `${att.attended || 0} / ${att.total || 0} days`,
+      icon:  ClipboardCheck,
+      gradient: isLow ? 'from-red-400 to-rose-600' : 'from-emerald-500 to-teal-600',
     },
     {
-      label:   'Fee Balance',
-      value:   `₹${parseFloat(fees.balance || 0).toLocaleString('en-IN')}`,
-      color:   parseFloat(fees.balance || 0) > 0 ? 'text-red-500' : 'text-green-600',
-      bg:      parseFloat(fees.balance || 0) > 0 ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600',
-      iconKey: 'fees',
+      label: 'Fee Balance',
+      value: `₹${balance.toLocaleString('en-IN')}`,
+      sub:   hasDue ? 'Payment pending' : 'All clear',
+      icon:  DollarSign,
+      gradient: hasDue ? 'from-red-400 to-rose-600' : 'from-emerald-500 to-teal-600',
     },
     {
-      label:   'Latest Exam',
-      value:   marks[0] ? `${marks[0].percentage}%` : 'N/A',
-      color:   'text-blue-600',
-      bg:      'bg-blue-50 text-blue-600',
-      iconKey: 'results',
+      label: 'Latest Exam',
+      value: marks[0] ? `${marks[0].percentage}%` : 'N/A',
+      sub:   marks[0]?.exam_name || 'No results yet',
+      icon:  Award,
+      gradient: 'from-violet-500 to-purple-600',
     },
   ]
 
   return (
     <DashboardLayout title="Parent Dashboard">
-      <div className="p-6 space-y-5">
+      <div className="p-6 space-y-6">
 
-        {/* Child info banner */}
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-5 text-white">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
-              <Icon d={ICONS.family} size={18} className="text-white" />
+        {/* ── Welcome banner ── */}
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden rounded-2xl p-6"
+          style={{ background: 'linear-gradient(135deg, #92400e, #d97706, #f59e0b)' }}
+        >
+          <div className="absolute top-0 right-0 w-48 h-48 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/4" />
+          <div className="relative z-10 flex items-center justify-between">
+            <div>
+              <p className="text-amber-200 text-sm">Welcome 👨‍👩‍👧</p>
+              <h2 className="text-white text-2xl font-bold font-display mt-0.5">{student.name}</h2>
+              <p className="text-amber-300 text-sm mt-1">
+                {student.class_name} — {student.section} · Roll No: {student.roll_no || 'N/A'}
+              </p>
             </div>
-            <p className="text-sm opacity-80">Your Child</p>
-          </div>
-          <p className="text-2xl font-bold mt-0.5">{student.name}</p>
-          <p className="text-sm opacity-70 mt-0.5">
-            {student.class_name} — {student.section}
-          </p>
-        </div>
-
-        {/* Quick stats */}
-        <div className="grid grid-cols-3 gap-4">
-          {quickStats.map(s => (
-            <div key={s.label}
-              className="bg-white border border-gray-200 rounded-xl p-4 text-center">
-              <div className={`w-10 h-10 rounded-xl mx-auto mb-2 flex items-center
-                               justify-center ${s.bg}`}>
-                <Icon d={ICONS[s.iconKey]} size={18} />
+            {isLow && (
+              <div className="hidden md:flex items-center gap-2 bg-red-500/20 border border-red-400/30 rounded-xl px-4 py-2">
+                <AlertCircle size={16} className="text-red-300" />
+                <div>
+                  <p className="text-red-200 text-xs font-semibold">Low Attendance Alert</p>
+                  <p className="text-red-300 text-xs">Below 75% — take action</p>
+                </div>
               </div>
-              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
-            </div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* ── Stat cards ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {statCards.map((s, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.07 }}
+              whileHover={{ y: -2, transition: { duration: 0.15 } }}
+            >
+              <Card className="cursor-default">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.gradient} flex items-center justify-center mb-3`}>
+                  <s.icon size={18} className="text-white" />
+                </div>
+                <p className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-display">{s.value}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{s.label}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{s.sub}</p>
+              </Card>
+            </motion.div>
           ))}
         </div>
 
-        {/* Attendance warning */}
-        {attPct < 75 && (
-          <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-4 flex items-start gap-3">
-            <Icon d={ICONS.warning} size={18} className="text-red-500 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-red-700">Attendance Warning</p>
-              <p className="text-xs text-red-600 mt-1">
-                {student.name}'s attendance is {att.percentage}%, which is below the required 75%.
-                Please ensure regular attendance.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Exam results */}
-        {marks.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
-              <Icon d={ICONS.results} size={15} className="text-gray-500" />
-              <p className="text-sm font-semibold text-gray-700">Recent Results</p>
-            </div>
-            <div className="divide-y divide-gray-50">
-              {marks.map((m, i) => {
-                const pct   = parseFloat(m.percentage || 0)
-                const color = pct >= 75 ? 'text-green-600'
-                            : pct >= 50 ? 'text-yellow-600'
-                            : 'text-red-500'
-                return (
-                  <div key={i} className="flex items-center justify-between px-5 py-3">
-                    <p className="text-sm text-gray-800">{m.exam_name}</p>
-                    <span className={`text-lg font-bold ${color}`}>
-                      {m.percentage}%
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Notices */}
-        {notices.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
-              <Icon d={ICONS.notice} size={15} className="text-gray-500" />
-              <p className="text-sm font-semibold text-gray-700">School Notices</p>
-            </div>
-            <div className="divide-y divide-gray-50">
-              {notices.map(n => (
-                <div key={n.id} className="px-5 py-3">
-                  <p className="text-sm font-medium text-gray-800">{n.title}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {new Date(n.created_at).toLocaleDateString('en-IN', {
-                      day: '2-digit', month: 'short',
-                    })}
+        {/* ── Alerts ── */}
+        {(isLow || hasDue) && (
+          <div className="space-y-3">
+            {isLow && (
+              <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20">
+                <AlertCircle size={18} className="text-red-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-red-700 dark:text-red-400">Attendance Warning</p>
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">
+                    {student.name}'s attendance is {att.percentage}%, below the required 75%.
+                    Please ensure regular school attendance.
                   </p>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+            {hasDue && (
+              <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
+                <DollarSign size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Fee Payment Due</p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                    ₹{balance.toLocaleString('en-IN')} is pending. Please contact the school fee office.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )}
+
+        {/* ── Results + Notices ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          <Card>
+            <CardHeader action={
+              <button className="text-xs text-primary-600 dark:text-primary-400 font-medium flex items-center gap-1">
+                View all <ArrowUpRight size={12} />
+              </button>
+            }>
+              <CardTitle>Recent Exam Results</CardTitle>
+              <CardSubtitle>{student.name}'s performance</CardSubtitle>
+            </CardHeader>
+            {marks.length === 0 ? (
+              <EmptyState icon={Award} title="No results" compact description="No exam results published yet." />
+            ) : (
+              <div className="space-y-2">
+                {marks.slice(0, 5).map((m, i) => {
+                  const pct = parseFloat(m.percentage || 0)
+                  const bar = pct >= 75 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500'
+                  const col = pct >= 75 ? 'text-emerald-600 dark:text-emerald-400'
+                            : pct >= 50 ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-red-600 dark:text-red-400'
+                  return (
+                    <div key={i} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                      <div className="flex justify-between mb-1.5">
+                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{m.exam_name}</p>
+                        <span className={`text-sm font-bold ${col}`}>{pct.toFixed(0)}%</span>
+                      </div>
+                      <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
+                        <div className={`h-1.5 rounded-full ${bar}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>School Notices</CardTitle>
+              <CardSubtitle>Latest announcements</CardSubtitle>
+            </CardHeader>
+            {notices.length === 0 ? (
+              <EmptyState icon={Bell} title="No notices" compact description="No recent announcements." />
+            ) : (
+              <div className="space-y-2">
+                {notices.slice(0, 5).map(n => (
+                  <div key={n.id} className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <div className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0 mt-0.5">
+                      <Bell size={12} className="text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{n.title}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {new Date(n.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
 
       </div>
     </DashboardLayout>

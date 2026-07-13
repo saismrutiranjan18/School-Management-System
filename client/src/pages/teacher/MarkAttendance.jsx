@@ -5,13 +5,17 @@ import { fetchAttendanceSheet, markAttendance } from '../../api/attendance.api'
 import api from '../../api/axios'
 import { useSelector } from 'react-redux'
 import DashboardLayout from '../../components/DashboardLayout'
+import Button from '../../components/ui/Button'
+import { Select, Input } from '../../components/ui/Input'
+import Card, { CardHeader, CardTitle } from '../../components/ui/Card'
+import { CheckCircle2, XCircle, Clock, Users, AlertCircle, Send } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 const STATUS_STYLES = {
-  present: 'bg-green-100 text-green-700 border-green-300',
-  absent:  'bg-red-100  text-red-700  border-red-300',
-  late:    'bg-yellow-100 text-yellow-700 border-yellow-300',
+  present: { bg: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700', active: true },
+  absent:  { bg: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700', active: true },
+  late:    { bg: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700', active: true },
 }
-
 const STATUS_OPTIONS = ['present', 'absent', 'late']
 
 export default function MarkAttendance() {
@@ -24,39 +28,24 @@ export default function MarkAttendance() {
   const [records,   setRecords]   = useState([])
   const [submitted, setSubmitted] = useState(false)
 
-  // Fetch classes
-  const { data: classes = [] } = useQuery({
-    queryKey: ['classes'],
-    queryFn: fetchClasses,
-  })
-
-  // Fetch subjects for selected class
+  const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: fetchClasses })
   const { data: subjects = [] } = useQuery({
     queryKey: ['class-subjects', classId],
     queryFn: () => api.get(`/classes/${classId}/subjects`).then(r => r.data),
     enabled: !!classId,
   })
-
-  // Fetch teacher record
   const { data: teacherRecord } = useQuery({
     queryKey: ['my-teacher-record', user?.id],
-    queryFn: () => api.get('/teachers').then(r =>
-      r.data.find(t => t.email === user?.email)
-    ),
+    queryFn: () => api.get('/teachers').then(r => r.data.find(t => t.email === user?.email)),
     enabled: !!user,
   })
 
-  // Fetch attendance sheet when all three selected
   const { isLoading: sheetLoading } = useQuery({
     queryKey: ['attendance-sheet', classId, subjectId, date],
     queryFn: async () => {
       const data = await fetchAttendanceSheet(classId, subjectId, date)
       setRecords(data.students.map(s => ({
-        student_id: s.student_id,
-        name:       s.name,
-        roll_no:    s.roll_no,
-        status:     s.status,
-        remarks:    s.remarks,
+        student_id: s.student_id, name: s.name, roll_no: s.roll_no, status: s.status, remarks: s.remarks,
       })))
       setSubmitted(data.is_marked)
       return data
@@ -69,24 +58,14 @@ export default function MarkAttendance() {
     onSuccess: () => setSubmitted(true),
   })
 
-  const setStatus = (index, status) => {
-    setRecords(prev => prev.map((r, i) => i === index ? { ...r, status } : r))
-  }
-
-  const markAll = (status) => {
-    setRecords(prev => prev.map(r => ({ ...r, status })))
-  }
+  const setStatus = (index, status) => setRecords(prev => prev.map((r, i) => i === index ? { ...r, status } : r))
+  const markAll   = (status) => setRecords(prev => prev.map(r => ({ ...r, status })))
 
   const handleSubmit = () => {
     if (!teacherRecord) return
     mutation.mutate({
-      class_id:   parseInt(classId),
-      subject_id: parseInt(subjectId),
-      teacher_id: teacherRecord.id,
-      date,
-      records:    records.map(({ student_id, status, remarks }) =>
-                    ({ student_id, status, remarks })
-                  ),
+      class_id: parseInt(classId), subject_id: parseInt(subjectId), teacher_id: teacherRecord.id, date,
+      records: records.map(({ student_id, status, remarks }) => ({ student_id, status, remarks })),
     })
   }
 
@@ -96,89 +75,58 @@ export default function MarkAttendance() {
 
   return (
     <DashboardLayout title="Mark Attendance">
-      <div className="p-6 max-w-4xl">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-800">Mark Attendance</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Select class, subject, and date to begin</p>
-        </div>
-
-      {/* Filters */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="p-6 space-y-6 max-w-4xl">
         <div>
-          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Class</label>
-          <select
-            value={classId}
-            onChange={e => { setClassId(e.target.value); setSubjectId('') }}
-            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select class...</option>
-            {classes.map(c => (
-              <option key={c.id} value={c.id}>{c.name} — {c.section}</option>
-            ))}
-          </select>
+          <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 font-display">Mark Attendance</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Select class, subject, and date to begin</p>
         </div>
 
-        <div>
-          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Subject</label>
-          <select
-            value={subjectId}
-            onChange={e => setSubjectId(e.target.value)}
-            disabled={!classId}
-            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-          >
-            <option value="">Select subject...</option>
-            {subjects.map(s => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-        </div>
+        {/* Filters */}
+        <Card className="grid grid-cols-3 gap-4">
+          <Select label="Class" value={classId} onChange={e => { setClassId(e.target.value); setSubjectId('') }}>
+            <option value="">Select class…</option>
+            {classes.map(c => <option key={c.id} value={c.id}>{c.name} — {c.section}</option>)}
+          </Select>
+          <Select label="Subject" value={subjectId} onChange={e => setSubjectId(e.target.value)} disabled={!classId}>
+            <option value="">Select subject…</option>
+            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </Select>
+          <Input label="Date" type="date" value={date} max={today} onChange={e => setDate(e.target.value)} />
+        </Card>
 
-        <div>
-          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Date</label>
-          <input
-            type="date"
-            value={date}
-            max={today}
-            onChange={e => setDate(e.target.value)}
-            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-      </div>
-
-      {/* Ready to mark */}
-      {classId && subjectId && date && (
-        <>
-          {sheetLoading ? (
-            <p className="text-gray-400 text-sm py-8 text-center">Loading students...</p>
+        {/* Attendance sheet */}
+        {classId && subjectId && date && (
+          sheetLoading ? (
+            <Card><p className="text-sm text-slate-400 text-center py-8">Loading students…</p></Card>
           ) : records.length === 0 ? (
-            <p className="text-gray-400 text-sm py-8 text-center">
-              No students found in this class.
-            </p>
+            <Card><p className="text-sm text-slate-400 text-center py-8">No students found in this class.</p></Card>
           ) : (
-            <>
-              {/* Summary stats */}
-              <div className="grid grid-cols-3 gap-3 mb-4">
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              {/* Summary */}
+              <div className="grid grid-cols-3 gap-3">
                 {[
-                  { label: 'Present', count: presentCount, color: 'text-green-600 bg-green-50 border-green-200' },
-                  { label: 'Absent',  count: absentCount,  color: 'text-red-600   bg-red-50   border-red-200'   },
-                  { label: 'Late',    count: lateCount,    color: 'text-yellow-600 bg-yellow-50 border-yellow-200' },
-                ].map(s => (
-                  <div key={s.label} className={`rounded-xl border px-4 py-3 ${s.color}`}>
-                    <p className="text-xs font-medium">{s.label}</p>
-                    <p className="text-2xl font-semibold">{s.count}</p>
-                  </div>
+                  { label: 'Present', count: presentCount, icon: CheckCircle2, gradient: 'from-emerald-500 to-teal-600' },
+                  { label: 'Absent',  count: absentCount,  icon: XCircle,      gradient: 'from-red-400 to-rose-600'     },
+                  { label: 'Late',    count: lateCount,    icon: Clock,        gradient: 'from-amber-400 to-orange-500' },
+                ].map((s, i) => (
+                  <Card key={i} className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.gradient} flex items-center justify-center shrink-0`}>
+                      <s.icon size={16} className="text-white" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-display">{s.count}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{s.label}</p>
+                    </div>
+                  </Card>
                 ))}
               </div>
 
-              {/* Mark all buttons */}
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-xs text-gray-500 mr-1">Mark all:</span>
+              {/* Mark all */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500 dark:text-slate-400 mr-1">Mark all:</span>
                 {STATUS_OPTIONS.map(s => (
-                  <button
-                    key={s}
-                    onClick={() => markAll(s)}
-                    className={`px-3 py-1 text-xs rounded-full border font-medium capitalize ${STATUS_STYLES[s]}`}
-                  >
+                  <button key={s} onClick={() => markAll(s)}
+                    className={`px-3 py-1 text-xs rounded-full border font-medium capitalize transition-all ${STATUS_STYLES[s].bg}`}>
                     {s}
                   </button>
                 ))}
@@ -186,98 +134,80 @@ export default function MarkAttendance() {
 
               {/* Already marked banner */}
               {submitted && (
-                <div className="mb-4 px-4 py-2 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg">
-                  ✅ Attendance already marked for this session. You can still update it.
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/30 text-emerald-700 dark:text-emerald-400 text-sm rounded-xl">
+                  <CheckCircle2 size={15} className="shrink-0" />
+                  Attendance already marked. You can still update it.
                 </div>
               )}
 
               {/* Student list */}
-              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-4">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
-                    <tr>
-                      <th className="text-left px-5 py-3 w-16">Roll</th>
-                      <th className="text-left px-5 py-3">Student Name</th>
-                      <th className="text-left px-5 py-3">Status</th>
-                      <th className="text-left px-5 py-3">Remarks</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {records.map((student, index) => (
-                      <tr key={student.student_id} className="hover:bg-gray-50">
-                        <td className="px-5 py-3 text-gray-400 text-xs">
-                          {student.roll_no || '—'}
-                        </td>
-                        <td className="px-5 py-3 font-medium text-gray-800">
-                          {student.name}
-                        </td>
-                        <td className="px-5 py-3">
-                          <div className="flex gap-1.5">
-                            {STATUS_OPTIONS.map(s => (
-                              <button
-                                key={s}
-                                onClick={() => setStatus(index, s)}
-                                className={`
-                                  px-3 py-1 text-xs rounded-full border font-medium capitalize
-                                  transition-all
-                                  ${student.status === s
-                                    ? STATUS_STYLES[s]
-                                    : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300'}
-                                `}
-                              >
-                                {s}
-                              </button>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="px-5 py-3">
-                          <input
-                            value={student.remarks}
-                            onChange={e => setRecords(prev =>
-                              prev.map((r, i) =>
-                                i === index ? { ...r, remarks: e.target.value } : r
-                              )
-                            )}
-                            placeholder="Optional note..."
-                            className="w-full px-2 py-1 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
-                          />
-                        </td>
+              <Card padding="none">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wide">
+                      <tr>
+                        <th className="text-left px-5 py-3 w-16">Roll</th>
+                        <th className="text-left px-5 py-3">Student Name</th>
+                        <th className="text-left px-5 py-3">Status</th>
+                        <th className="text-left px-5 py-3">Remarks</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800/60">
+                      {records.map((student, index) => (
+                        <tr key={student.student_id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                          <td className="px-5 py-3 text-slate-400 text-xs">{student.roll_no || '—'}</td>
+                          <td className="px-5 py-3">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                                {student.name?.charAt(0)?.toUpperCase()}
+                              </div>
+                              <span className="font-medium text-slate-800 dark:text-slate-100">{student.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3">
+                            <div className="flex gap-1.5">
+                              {STATUS_OPTIONS.map(s => (
+                                <button key={s} onClick={() => setStatus(index, s)}
+                                  className={`px-3 py-1 text-xs rounded-full border font-medium capitalize transition-all
+                                    ${student.status === s ? STATUS_STYLES[s].bg : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'}`}>
+                                  {s}
+                                </button>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="px-5 py-3">
+                            <input value={student.remarks}
+                              onChange={e => setRecords(prev => prev.map((r, i) => i === index ? { ...r, remarks: e.target.value } : r))}
+                              placeholder="Optional note…"
+                              className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-400 transition-all" />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
 
               {/* Submit */}
               <div className="flex items-center gap-4">
-                <button
-                  onClick={handleSubmit}
-                  disabled={mutation.isPending}
-                  className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
-                >
-                  {mutation.isPending
-                    ? 'Saving...'
-                    : submitted
-                      ? 'Update Attendance'
-                      : 'Submit Attendance'}
-                </button>
-
+                <Button leftIcon={<Send size={14} />} loading={mutation.isPending} onClick={handleSubmit}>
+                  {submitted ? 'Update Attendance' : 'Submit Attendance'}
+                </Button>
                 {mutation.isSuccess && (
-                  <span className="text-sm text-green-600">
-                    ✅ Attendance saved! Absence alerts sent via email.
+                  <span className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                    <CheckCircle2 size={14} /> Saved! Absence alerts sent.
                   </span>
                 )}
                 {mutation.isError && (
-                  <span className="text-sm text-red-500">
-                    ❌ {mutation.error?.response?.data?.error || 'Failed to save.'}
+                  <span className="text-sm text-red-500 flex items-center gap-1.5">
+                    <AlertCircle size={14} /> {mutation.error?.response?.data?.error || 'Failed to save.'}
                   </span>
                 )}
               </div>
-            </>
-          )}
-        </>
-      )}
-        </div>
-  </DashboardLayout>
-)
+            </motion.div>
+          )
+        )}
+      </div>
+    </DashboardLayout>
+  )
 }

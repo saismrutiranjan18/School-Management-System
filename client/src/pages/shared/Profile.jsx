@@ -18,35 +18,35 @@ const Icon = ({ d, size = 18, className = '' }) => (
 )
 
 const ICONS = {
-  camera:   ['M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z', 'M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'],
-  lock:     ['M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z', 'M7 11V7a5 5 0 0 1 10 0v4'],
-  briefcase:['M20 7h-7V3a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v4H3a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h17a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1z', 'M8 7V4h4v3'],
-  classes:  'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10',
-  user:     ['M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2', 'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'],
-  child:    ['M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2', 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'M23 21v-2a4 4 0 0 0-3-3.87', 'M16 3.13a4 4 0 0 1 0 7.75'],
-  rupee:    ['M12 2v20', 'M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'],
-  check:    ['M20 6 9 17l-5-5'],
+  camera: ['M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z', 'M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'],
+  lock: ['M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z', 'M7 11V7a5 5 0 0 1 10 0v4'],
+  briefcase: ['M20 7h-7V3a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v4H3a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h17a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1z', 'M8 7V4h4v3'],
+  classes: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10',
+  user: ['M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2', 'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'],
+  child: ['M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2', 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'M23 21v-2a4 4 0 0 0-3-3.87', 'M16 3.13a4 4 0 0 1 0 7.75'],
+  rupee: ['M12 2v20', 'M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'],
+  check: ['M20 6 9 17l-5-5'],
 }
 
 const ROLE_LABELS = {
-  admin:   'Super Admin',
+  admin: 'Super Admin',
   teacher: 'Teacher',
   student: 'Student',
-  parent:  'Parent',
+  parent: 'Parent',
 }
 
 const ROLE_BADGE = {
-  admin:   'bg-purple-100 text-purple-700',
+  admin: 'bg-purple-100 text-purple-700',
   teacher: 'bg-blue-100   text-blue-700',
   student: 'bg-green-100  text-green-700',
-  parent:  'bg-orange-100 text-orange-700',
+  parent: 'bg-orange-100 text-orange-700',
 }
 
 function PasswordSection() {
-  const [open, setOpen]   = useState(false)
-  const [form, setForm]   = useState({ current_password: '', new_password: '', confirm: '' })
+  const [open, setOpen] = useState(false)
+  const [form, setForm] = useState({ current_password: '', new_password: '', confirm: '' })
   const [error, setError] = useState('')
-  const [done, setDone]   = useState(false)
+  const [done, setDone] = useState(false)
 
   const mutation = useMutation({
     mutationFn: changeMyPassword,
@@ -67,7 +67,7 @@ function PasswordSection() {
     }
     mutation.mutate({
       current_password: form.current_password,
-      new_password:      form.new_password,
+      new_password: form.new_password,
     })
   }
 
@@ -191,12 +191,12 @@ function RoleDetailsCard({ role, profile }) {
         </div>
         <div className="p-5 grid grid-cols-2 gap-4">
           {[
-            { label: 'Class',          value: profile?.class_name ? `${profile.class_name} — ${profile.section}` : '—' },
-            { label: 'Roll No',        value: profile?.roll_no || '—' },
-            { label: 'Date of Birth',  value: profile?.dob ? new Date(profile.dob).toLocaleDateString('en-IN') : '—' },
-            { label: 'Gender',         value: profile?.gender || '—' },
+            { label: 'Class', value: profile?.class_name ? `${profile.class_name} — ${profile.section}` : '—' },
+            { label: 'Roll No', value: profile?.roll_no || '—' },
+            { label: 'Date of Birth', value: profile?.dob ? new Date(profile.dob).toLocaleDateString('en-IN') : '—' },
+            { label: 'Gender', value: profile?.gender || '—' },
             { label: 'Admission Date', value: profile?.admission_date ? new Date(profile.admission_date).toLocaleDateString('en-IN') : '—' },
-            { label: 'Guardian Name',  value: profile?.guardian_name || '—' },
+            { label: 'Guardian Name', value: profile?.guardian_name || '—' },
             { label: 'Guardian Phone', value: profile?.guardian_phone || '—' },
             { label: 'Guardian Email', value: profile?.guardian_email || '—' },
           ].map(f => (
@@ -257,19 +257,19 @@ function RoleDetailsCard({ role, profile }) {
 }
 
 export default function Profile() {
-  const dispatch        = useDispatch()
-  const qc              = useQueryClient()
-  const { user }        = useSelector(state => state.auth)
-  const fileInputRef    = useRef(null)
+  const dispatch = useDispatch()
+  const qc = useQueryClient()
+  const { user } = useSelector(state => state.auth)
+  const fileInputRef = useRef(null)
 
-  const [form, setForm]   = useState({ name: '', phone: '' })
+  const [form, setForm] = useState({ name: '', phone: '' })
   const [editing, setEditing] = useState(false)
-  const [error, setError]     = useState('')
-  const [saved, setSaved]     = useState(false)
+  const [error, setError] = useState('')
+  const [saved, setSaved] = useState(false)
 
   const { data, isLoading } = useQuery({
     queryKey: ['my-profile'],
-    queryFn:  fetchMyProfile,
+    queryFn: fetchMyProfile,
     onSuccess: (data) => {
       if (!editing) setForm({ name: data.name || '', phone: data.phone || '' })
     },

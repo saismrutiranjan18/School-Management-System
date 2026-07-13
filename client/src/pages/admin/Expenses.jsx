@@ -1,323 +1,186 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  fetchExpenses, createExpense,
-  updateExpense, deleteExpense,
-} from '../../api/expenses.api'
+import { fetchExpenses, createExpense, updateExpense, deleteExpense } from '../../api/expenses.api'
 import DashboardLayout from '../../components/DashboardLayout'
+import DataTable from '../../components/ui/DataTable'
+import Modal from '../../components/ui/Modal'
+import Button from '../../components/ui/Button'
+import { Input, Select, Textarea } from '../../components/ui/Input'
+import Badge from '../../components/ui/Badge'
+import Card from '../../components/ui/Card'
+import { Receipt, Plus, Pencil, Trash2, AlertCircle, TrendingDown, Layers } from 'lucide-react'
+import { motion } from 'framer-motion'
 
-const CATEGORIES = [
-  'Salaries','Utilities','Maintenance','Stationery',
-  'Equipment','Events','Transport','Other',
-]
+const CATEGORIES = ['Salaries','Utilities','Maintenance','Stationery','Equipment','Events','Transport','Other']
 
-const CAT_COLORS = {
-  Salaries:    'bg-blue-50 text-blue-700',
-  Utilities:   'bg-yellow-50 text-yellow-700',
-  Maintenance: 'bg-orange-50 text-orange-700',
-  Stationery:  'bg-green-50 text-green-700',
-  Equipment:   'bg-purple-50 text-purple-700',
-  Events:      'bg-pink-50 text-pink-700',
-  Transport:   'bg-cyan-50 text-cyan-700',
-  Other:       'bg-gray-100 text-gray-600',
+const CAT_VARIANT = {
+  Salaries: 'info', Utilities: 'warning', Maintenance: 'danger', Stationery: 'success',
+  Equipment: 'purple', Events: 'primary', Transport: 'info', Other: 'default',
 }
 
-function ExpenseModal({ onClose, existing }) {
-  const qc     = useQueryClient()
-  const isEdit = !!existing
-  const today  = new Date().toISOString().split('T')[0]
-
-  const [form, setForm] = useState({
-    title:        existing?.title        || '',
-    category:     existing?.category     || 'Other',
-    amount:       existing?.amount       || '',
-    expense_date: existing?.expense_date?.split('T')[0] || today,
-    description:  existing?.description  || '',
-  })
-  const [error, setError] = useState('')
-
-  const mutation = useMutation({
-    mutationFn: (data) => isEdit
-      ? updateExpense(existing.id, data)
-      : createExpense(data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['expenses'] })
-      onClose()
-    },
-    onError: (err) => setError(err.response?.data?.error || 'Something went wrong.'),
-  })
-
+function ErrorAlert({ msg }) {
+  if (!msg) return null
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
-        <h2 className="text-lg font-semibold mb-4">
-          {isEdit ? 'Edit Expense' : 'Add Expense'}
-        </h2>
-
-        {error && (
-          <p className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 p-2 rounded-lg">
-            {error}
-          </p>
-        )}
-
-        <form
-          onSubmit={(e) => { e.preventDefault(); mutation.mutate(form) }}
-          className="space-y-3"
-        >
-          <div>
-            <label className="text-sm font-medium text-gray-700">Title</label>
-            <input
-              value={form.title}
-              onChange={e => setForm({ ...form, title: e.target.value })}
-              placeholder="e.g. Electricity Bill November"
-              required
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Category</label>
-              <select
-                value={form.category}
-                onChange={e => setForm({ ...form, category: e.target.value })}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {CATEGORIES.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Amount (₹)</label>
-              <input
-                type="number" min="0" step="0.01"
-                value={form.amount}
-                onChange={e => setForm({ ...form, amount: e.target.value })}
-                placeholder="e.g. 5000"
-                required
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700">Date</label>
-            <input
-              type="date"
-              value={form.expense_date}
-              onChange={e => setForm({ ...form, expense_date: e.target.value })}
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700">Description (optional)</label>
-            <textarea
-              value={form.description}
-              onChange={e => setForm({ ...form, description: e.target.value })}
-              placeholder="Any additional details..."
-              rows={2}
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button" onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit" disabled={mutation.isPending}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
-            >
-              {mutation.isPending ? 'Saving...' : isEdit ? 'Update' : 'Add'}
-            </button>
-          </div>
-        </form>
-      </div>
+    <div className="flex items-center gap-2 p-3 mb-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl text-sm text-red-600 dark:text-red-400">
+      <AlertCircle size={14} className="shrink-0" />{msg}
     </div>
   )
 }
 
+function ExpenseModal({ onClose, existing }) {
+  const qc = useQueryClient()
+  const isEdit = !!existing
+  const today = new Date().toISOString().split('T')[0]
+  const [form, setForm] = useState({
+    title: existing?.title || '', category: existing?.category || 'Other',
+    amount: existing?.amount || '', expense_date: existing?.expense_date?.split('T')[0] || today,
+    description: existing?.description || '',
+  })
+  const [error, setError] = useState('')
+
+  const mutation = useMutation({
+    mutationFn: (data) => isEdit ? updateExpense(existing.id, data) : createExpense(data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); onClose() },
+    onError: (err) => setError(err.response?.data?.error || 'Something went wrong.'),
+  })
+  const f = (key) => ({ value: form[key], onChange: (e) => setForm({ ...form, [key]: e.target.value }) })
+
+  return (
+    <Modal open onClose={onClose} title={isEdit ? 'Edit Expense' : 'Add Expense'}
+      subtitle="Record a school expenditure" size="sm"
+      footer={<>
+        <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <Button loading={mutation.isPending} onClick={() => { setError(''); mutation.mutate(form) }}>
+          {isEdit ? 'Save Changes' : 'Add Expense'}
+        </Button>
+      </>}
+    >
+      <ErrorAlert msg={error} />
+      <div className="space-y-3">
+        <Input label="Title" required placeholder="e.g. Electricity Bill November" {...f('title')} />
+        <div className="grid grid-cols-2 gap-3">
+          <Select label="Category" {...f('category')}>
+            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </Select>
+          <Input label="Amount (₹)" type="number" min="0" step="0.01" required placeholder="e.g. 5000" {...f('amount')} />
+        </div>
+        <Input label="Date" type="date" {...f('expense_date')} />
+        <Textarea label="Description (optional)" placeholder="Any additional details…" {...f('description')} />
+      </div>
+    </Modal>
+  )
+}
+
 export default function Expenses() {
-  const qc    = useQueryClient()
+  const qc = useQueryClient()
   const today = new Date().toISOString().split('T')[0]
   const monthStart = today.slice(0, 8) + '01'
 
-  const [modal,    setModal]    = useState(null)
-  const [from,     setFrom]     = useState(monthStart)
-  const [to,       setTo]       = useState(today)
+  const [modal, setModal]       = useState(null)
+  const [from, setFrom]         = useState(monthStart)
+  const [to, setTo]             = useState(today)
   const [category, setCategory] = useState('')
 
   const { data, isLoading } = useQuery({
     queryKey: ['expenses', from, to, category],
-    queryFn:  () => fetchExpenses({
-      from, to,
-      category: category || undefined,
-    }),
+    queryFn: () => fetchExpenses({ from, to, category: category || undefined }),
   })
 
   const deleteMutation = useMutation({
     mutationFn: deleteExpense,
-    onSuccess:  () => qc.invalidateQueries({ queryKey: ['expenses'] }),
-    onError:    (err) => alert(err.response?.data?.error || 'Delete failed.'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['expenses'] }),
+    onError: (err) => alert(err.response?.data?.error || 'Delete failed.'),
   })
 
-  const expenses    = data?.expenses      || []
-  const byCategory  = data?.by_category   || []
+  const expenses     = data?.expenses     || []
+  const byCategory   = data?.by_category  || []
   const totalExpense = data?.total_expense || 0
 
+  const columns = [
+    {
+      header: 'Expense', key: 'title',
+      render: (_, e) => (
+        <div>
+          <p className="font-medium text-slate-800 dark:text-slate-100">{e.title}</p>
+          {e.description && <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{e.description}</p>}
+        </div>
+      ),
+    },
+    { header: 'Category', key: 'category', render: v => <Badge variant={CAT_VARIANT[v] || 'default'}>{v}</Badge> },
+    { header: 'Date', key: 'expense_date', render: v => new Date(v).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) },
+    {
+      header: 'Amount', key: 'amount',
+      render: v => <span className="font-semibold text-red-600 dark:text-red-400">₹{parseFloat(v).toLocaleString('en-IN')}</span>,
+    },
+    { header: 'Recorded By', key: 'recorded_by_name', render: v => <span className="text-xs text-slate-400">{v || '—'}</span> },
+    {
+      header: 'Actions', key: 'id', sortable: false,
+      render: (_, e) => (
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" leftIcon={<Pencil size={12} />} onClick={() => setModal(e)}>Edit</Button>
+          <Button size="sm" variant="danger" leftIcon={<Trash2 size={12} />}
+            onClick={() => { if (confirm(`Delete "${e.title}"?`)) deleteMutation.mutate(e.id) }}>Delete</Button>
+        </div>
+      ),
+    },
+  ]
+
   return (
-  <DashboardLayout title="Expenses">
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-800">Expenses</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Track all school expenditures</p>
-        </div>
-        <button
-          onClick={() => setModal('add')}
-          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
-        >
-          + Add Expense
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div className="flex gap-3 mb-6 flex-wrap">
-        <div>
-          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">From</label>
-          <input
-            type="date" value={from}
-            onChange={e => setFrom(e.target.value)}
-            className="mt-1 block px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div>
-          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">To</label>
-          <input
-            type="date" value={to}
-            onChange={e => setTo(e.target.value)}
-            className="mt-1 block px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div>
-          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Category</label>
-          <select
-            value={category}
-            onChange={e => setCategory(e.target.value)}
-            className="mt-1 block px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">All Categories</option>
-            {CATEGORIES.map(c => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-          <p className="text-xs text-red-500">Total Expenses</p>
-          <p className="text-2xl font-bold text-red-600 mt-1">
-            ₹{totalExpense.toLocaleString('en-IN')}
-          </p>
-          <p className="text-xs text-red-400 mt-0.5">{expenses.length} records</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-xs text-gray-500 mb-2">By Category</p>
-          <div className="flex flex-wrap gap-2">
-            {byCategory.slice(0, 4).map(c => (
-              <span key={c.category}
-                className={`text-xs px-2 py-0.5 rounded-full font-medium ${CAT_COLORS[c.category] || CAT_COLORS.Other}`}>
-                {c.category}: ₹{parseFloat(c.total).toLocaleString('en-IN')}
-              </span>
-            ))}
+    <DashboardLayout title="Expenses">
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 font-display">Expenses</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Track all school expenditures</p>
           </div>
+          <Button leftIcon={<Plus size={15} />} onClick={() => setModal('add')}>Add Expense</Button>
         </div>
-      </div>
 
-      {/* Table */}
-      {isLoading ? (
-        <p className="text-gray-400 text-sm">Loading expenses...</p>
-      ) : expenses.length === 0 ? (
-        <p className="text-gray-400 text-sm text-center py-16">
-          No expenses recorded for this period.
-        </p>
-      ) : (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
-              <tr>
-                <th className="text-left px-5 py-3">Title</th>
-                <th className="text-left px-5 py-3">Category</th>
-                <th className="text-left px-5 py-3">Date</th>
-                <th className="text-right px-5 py-3">Amount</th>
-                <th className="text-left px-5 py-3">Recorded By</th>
-                <th className="text-left px-5 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {expenses.map(exp => (
-                <tr key={exp.id} className="hover:bg-gray-50">
-                  <td className="px-5 py-3">
-                    <p className="font-medium text-gray-800">{exp.title}</p>
-                    {exp.description && (
-                      <p className="text-xs text-gray-400 mt-0.5">{exp.description}</p>
-                    )}
-                  </td>
-                  <td className="px-5 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CAT_COLORS[exp.category] || CAT_COLORS.Other}`}>
-                      {exp.category}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-gray-500">
-                    {new Date(exp.expense_date).toLocaleDateString('en-IN')}
-                  </td>
-                  <td className="px-5 py-3 text-right font-semibold text-red-600">
-                    ₹{parseFloat(exp.amount).toLocaleString('en-IN')}
-                  </td>
-                  <td className="px-5 py-3 text-gray-400 text-xs">
-                    {exp.recorded_by_name || '—'}
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setModal(exp)}
-                        className="text-xs px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Delete "${exp.title}"?`))
-                            deleteMutation.mutate(exp.id)
-                        }}
-                        className="text-xs px-3 py-1 border border-red-200 text-red-500 rounded-lg hover:bg-red-50"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Summary */}
+        <div className="grid grid-cols-2 gap-4">
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+            <Card className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-400 to-rose-600 flex items-center justify-center shrink-0">
+                <TrendingDown size={18} className="text-white" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-display">₹{totalExpense.toLocaleString('en-IN')}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Total Expenses · {expenses.length} records</p>
+              </div>
+            </Card>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}>
+            <Card>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">By Category</p>
+              <div className="flex flex-wrap gap-1.5">
+                {byCategory.slice(0, 5).map(c => (
+                  <Badge key={c.category} variant={CAT_VARIANT[c.category] || 'default'}>
+                    {c.category}: ₹{parseFloat(c.total).toLocaleString('en-IN')}
+                  </Badge>
+                ))}
+              </div>
+            </Card>
+          </motion.div>
         </div>
-      )}
 
-      {modal && (
-        <ExpenseModal
-          onClose={() => setModal(null)}
-          existing={modal === 'add' ? null : modal}
+        {/* Filters */}
+        <Card className="flex flex-wrap items-end gap-4">
+          <Input label="From" type="date" value={from} onChange={e => setFrom(e.target.value)} containerClass="w-40" />
+          <Input label="To"   type="date" value={to}   onChange={e => setTo(e.target.value)}   containerClass="w-40" />
+          <Select label="Category" value={category} onChange={e => setCategory(e.target.value)} containerClass="w-44">
+            <option value="">All Categories</option>
+            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </Select>
+        </Card>
+
+        <DataTable columns={columns} data={expenses} loading={isLoading}
+          searchKeys={['title', 'category', 'recorded_by_name']} pageSize={12}
+          emptyState={<div className="flex flex-col items-center gap-2 py-8 text-slate-400"><Receipt size={32} className="opacity-30" /><p className="text-sm">No expenses recorded</p></div>}
         />
-      )}
-        </div>
-  </DashboardLayout>
-)
+
+        {modal === 'add' && <ExpenseModal onClose={() => setModal(null)} />}
+        {modal && modal !== 'add' && <ExpenseModal existing={modal} onClose={() => setModal(null)} />}
+      </div>
+    </DashboardLayout>
+  )
 }

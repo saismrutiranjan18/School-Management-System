@@ -1,27 +1,28 @@
-import { useState, useMemo }     from 'react'
-import { useSelector }           from 'react-redux'
+import { useState, useMemo } from 'react'
+import { useSelector } from 'react-redux'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  fetchEvents, createEvent,
+  fetchEvents, fetchUpcomingEvents, createEvent,
   updateEvent, deleteEvent,
 } from '../../api/events.api'
 import { fetchClasses } from '../../api/classes.api'
+import DashboardLayout from '../../components/DashboardLayout'
 
 // ── Constants ──────────────────────────────────────────────────────────
-const DAYS_OF_WEEK = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
-const MONTHS       = [
-  'January','February','March','April','May','June',
-  'July','August','September','October','November','December',
+const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
 ]
 
 const EVENT_TYPES = [
-  { value: 'holiday',  label: 'Holiday',      color: '#dc2626' },
-  { value: 'exam',     label: 'Exam',         color: '#7c3aed' },
-  { value: 'ptm',      label: 'Parent-Teacher Meet', color: '#2563eb' },
-  { value: 'sports',   label: 'Sports',       color: '#16a34a' },
-  { value: 'cultural', label: 'Cultural',     color: '#d97706' },
-  { value: 'meeting',  label: 'Meeting',      color: '#0891b2' },
-  { value: 'general',  label: 'General',      color: '#64748b' },
+  { value: 'holiday', label: 'Holiday', color: '#dc2626' },
+  { value: 'exam', label: 'Exam', color: '#7c3aed' },
+  { value: 'ptm', label: 'Parent-Teacher Meet', color: '#2563eb' },
+  { value: 'sports', label: 'Sports', color: '#16a34a' },
+  { value: 'cultural', label: 'Cultural', color: '#d97706' },
+  { value: 'meeting', label: 'Meeting', color: '#0891b2' },
+  { value: 'general', label: 'General', color: '#64748b' },
 ]
 
 const TYPE_META = Object.fromEntries(
@@ -33,7 +34,7 @@ const toYMD = (date) => date.toISOString().split('T')[0]
 
 const getDaysInMonth = (year, month) => {
   const firstDay = new Date(year, month, 1).getDay()
-  const total    = new Date(year, month + 1, 0).getDate()
+  const total = new Date(year, month + 1, 0).getDate()
   return { firstDay, total }
 }
 
@@ -54,24 +55,24 @@ function EventDot({ color }) {
 
 // ── Event Modal (Add / Edit) ───────────────────────────────────────────
 function EventModal({ onClose, existing, defaultDate }) {
-  const qc     = useQueryClient()
+  const qc = useQueryClient()
   const isEdit = !!existing
 
   const [form, setForm] = useState({
-    title:        existing?.title        || '',
-    description:  existing?.description  || '',
-    event_date:   existing?.event_date?.split('T')[0] || defaultDate || '',
-    end_date:     existing?.end_date?.split('T')[0]   || '',
-    event_type:   existing?.event_type   || 'general',
-    target_role:  existing?.target_role  || 'all',
+    title: existing?.title || '',
+    description: existing?.description || '',
+    event_date: existing?.event_date?.split('T')[0] || defaultDate || '',
+    end_date: existing?.end_date?.split('T')[0] || '',
+    event_type: existing?.event_type || 'general',
+    target_role: existing?.target_role || 'all',
     target_class: existing?.target_class || '',
-    is_holiday:   existing?.is_holiday   || false,
+    is_holiday: existing?.is_holiday || false,
   })
   const [error, setError] = useState('')
 
   const { data: classes = [] } = useQuery({
     queryKey: ['classes'],
-    queryFn:  fetchClasses,
+    queryFn: fetchClasses,
   })
 
   const mutation = useMutation({
@@ -258,15 +259,15 @@ function EventModal({ onClose, existing, defaultDate }) {
 // ── Day Detail Panel ──────────────────────────────────────────────────
 function DayPanel({ date, events, onClose, onAdd, onEdit, onDelete, canEdit }) {
   return (
-    <div className="w-72 shrink-0 border-l border-gray-200 flex flex-col bg-white">
-      <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+    <div className="w-72 shrink-0 border-l border-slate-200 dark:border-slate-800 flex flex-col bg-white dark:bg-slate-900">
+      <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-gray-800">
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
             {new Date(date + 'T00:00:00').toLocaleDateString('en-IN', {
               weekday: 'long', day: 'numeric', month: 'long',
             })}
           </p>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-slate-400">
             {events.length} event{events.length !== 1 ? 's' : ''}
           </p>
         </div>
@@ -279,15 +280,15 @@ function DayPanel({ date, events, onClose, onAdd, onEdit, onDelete, canEdit }) {
               + Add
             </button>
           )}
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg">×</button>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg">×</button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-white dark:bg-slate-900">
         {events.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-2xl mb-2">📅</p>
-            <p className="text-xs text-gray-400">No events this day</p>
+            <p className="text-xs text-slate-400">No events this day</p>
             {canEdit && (
               <button
                 onClick={() => onAdd(date)}
@@ -316,7 +317,7 @@ function DayPanel({ date, events, onClose, onAdd, onEdit, onDelete, canEdit }) {
                         className="w-2 h-2 rounded-full shrink-0"
                         style={{ backgroundColor: meta?.color }}
                       />
-                      <p className="text-xs font-semibold text-gray-800 truncate">
+                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">
                         {ev.title}
                       </p>
                     </div>
@@ -327,17 +328,17 @@ function DayPanel({ date, events, onClose, onAdd, onEdit, onDelete, canEdit }) {
                       {meta?.label}
                     </span>
                     {ev.end_date && ev.end_date !== ev.event_date && (
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-slate-400 dark:text-slate-500">
                         Until {formatDisplay(ev.end_date)}
                       </p>
                     )}
                     {ev.description && (
-                      <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                         {ev.description}
                       </p>
                     )}
                     {ev.class_name && (
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                         📚 {ev.class_name} {ev.class_section}
                       </p>
                     )}
@@ -352,13 +353,13 @@ function DayPanel({ date, events, onClose, onAdd, onEdit, onDelete, canEdit }) {
                     <div className="flex flex-col gap-1 shrink-0">
                       <button
                         onClick={() => onEdit(ev)}
-                        className="text-xs px-2 py-0.5 border border-gray-300 rounded hover:bg-white"
+                        className="text-xs px-2 py-0.5 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded hover:bg-slate-50 dark:hover:bg-slate-800"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => onDelete(ev.id)}
-                        className="text-xs px-2 py-0.5 border border-red-200 text-red-500 rounded hover:bg-red-50"
+                        className="text-xs px-2 py-0.5 border border-red-200 dark:border-red-500/30 text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-500/10"
                       >
                         Del
                       </button>
@@ -379,13 +380,13 @@ function UpcomingWidget({ events }) {
   if (!events?.length) return null
 
   return (
-    <div className="mb-4 bg-white border border-gray-200 rounded-xl overflow-hidden">
-      <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100">
-        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+    <div className="mb-4 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/50 rounded-xl overflow-hidden">
+      <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800">
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
           Upcoming Events
         </p>
       </div>
-      <div className="divide-y divide-gray-50">
+      <div className="divide-y divide-slate-100 dark:divide-slate-800">
         {events.map(ev => {
           const meta = TYPE_META[ev.event_type]
           const daysLeft = Math.ceil(
@@ -398,8 +399,8 @@ function UpcomingWidget({ events }) {
                 style={{ backgroundColor: meta?.color }}
               />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-800 truncate">{ev.title}</p>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">{ev.title}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">
                   {formatDisplay(ev.event_date)}
                 </p>
               </div>
@@ -421,31 +422,31 @@ function UpcomingWidget({ events }) {
 
 // ── Main Calendar Page ─────────────────────────────────────────────────
 export default function CalendarPage() {
-  const qc         = useQueryClient()
-  const { user }   = useSelector(state => state.auth)
-  const canEdit    = ['admin','teacher'].includes(user?.role)
+  const qc = useQueryClient()
+  const { user } = useSelector(state => state.auth)
+  const canEdit = ['admin', 'teacher'].includes(user?.role)
 
-  const now        = new Date()
-  const [viewYear,  setViewYear]  = useState(now.getFullYear())
+  const now = new Date()
+  const [viewYear, setViewYear] = useState(now.getFullYear())
   const [viewMonth, setViewMonth] = useState(now.getMonth())
-  const [selected,  setSelected]  = useState(null)   // selected date string
-  const [modal,     setModal]     = useState(null)   // null | 'add' | eventObj
+  const [selected, setSelected] = useState(null)   // selected date string
+  const [modal, setModal] = useState(null)   // null | 'add' | eventObj
 
   const monthStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ['events', monthStr],
-    queryFn:  () => fetchEvents({ month: monthStr }),
+    queryFn: () => fetchEvents({ month: monthStr }),
   })
 
   const { data: upcomingEvents = [] } = useQuery({
     queryKey: ['upcoming-events'],
-    queryFn:  fetchUpcomingEvents,
+    queryFn: fetchUpcomingEvents,
   })
 
   const deleteMutation = useMutation({
     mutationFn: deleteEvent,
-    onSuccess:  () => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['events'] })
       qc.invalidateQueries({ queryKey: ['upcoming-events'] })
     },
@@ -522,188 +523,189 @@ export default function CalendarPage() {
   }, [eventMap, filterType])
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-800">Event Calendar</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Holidays, exams, meetings and school events
-          </p>
-        </div>
-        {canEdit && (
-          <button
-            onClick={() => setModal({ type: 'add', date: todayStr })}
-            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
-          >
-            + Add Event
-          </button>
-        )}
-      </div>
-
-      {/* Legend / filter */}
-      <div className="flex items-center gap-2 flex-wrap mb-5">
-        <button
-          onClick={() => setFilterType('')}
-          className={`px-3 py-1 rounded-full text-xs font-medium border transition
-            ${!filterType ? 'bg-gray-800 text-white border-gray-800' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}
-        >
-          All
-        </button>
-        {EVENT_TYPES.map(t => (
-          <button
-            key={t.value}
-            onClick={() => setFilterType(prev => prev === t.value ? '' : t.value)}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition
-              ${filterType === t.value ? 'text-white border-transparent' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
-            style={filterType === t.value
-              ? { backgroundColor: t.color, borderColor: t.color }
-              : {}}
-          >
-            <span
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ backgroundColor: filterType === t.value ? 'white' : t.color }}
-            />
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex gap-5">
-        {/* Left: Upcoming + Calendar */}
-        <div className="flex-1 min-w-0">
-          {/* Upcoming events */}
-          <UpcomingWidget events={upcomingEvents} />
-
-          {/* Calendar card */}
-          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-            {/* Month nav */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <button
-                onClick={prevMonth}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 transition"
-              >
-                ‹
-              </button>
-              <div className="text-center">
-                <p className="text-base font-semibold text-gray-800">
-                  {MONTHS[viewMonth]} {viewYear}
-                </p>
-              </div>
-              <button
-                onClick={nextMonth}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 transition"
-              >
-                ›
-              </button>
-            </div>
-
-            {/* Day headers */}
-            <div className="grid grid-cols-7 border-b border-gray-100">
-              {DAYS_OF_WEEK.map(d => (
-                <div key={d}
-                  className="py-2 text-center text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                  {d}
-                </div>
-              ))}
-            </div>
-
-            {/* Day cells */}
-            {isLoading ? (
-              <div className="py-16 text-center text-sm text-gray-400">
-                Loading calendar...
-              </div>
-            ) : (
-              <div className="grid grid-cols-7">
-                {/* Empty cells before first day */}
-                {Array.from({ length: firstDay }).map((_, i) => (
-                  <div key={`empty-${i}`} className="min-h-[80px] border-b border-r border-gray-50" />
-                ))}
-
-                {/* Day cells */}
-                {Array.from({ length: total }).map((_, i) => {
-                  const day     = i + 1
-                  const dayStr  = `${viewYear}-${String(viewMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
-                  const dayEvs  = filteredEventMap[dayStr] || []
-                  const isToday = dayStr === todayStr
-                  const isSel   = dayStr === selected
-                  const isHol   = dayEvs.some(e => e.is_holiday)
-                  const isWeekend = (firstDay + i) % 7 === 0 || (firstDay + i) % 7 === 6
-
-                  return (
-                    <div
-                      key={dayStr}
-                      onClick={() => handleDayClick(dayStr)}
-                      className={`min-h-[80px] p-1.5 border-b border-r border-gray-50 cursor-pointer transition-all
-                        ${isSel    ? 'bg-blue-50 ring-2 ring-inset ring-blue-400'  : ''}
-                        ${isHol    ? 'bg-red-50'    : ''}
-                        ${isWeekend && !isHol && !isSel ? 'bg-gray-50/50' : ''}
-                        ${!isSel && !isHol ? 'hover:bg-gray-50' : ''}
-                      `}
-                    >
-                      {/* Day number */}
-                      <div className="flex items-center justify-between mb-1">
-                        <span className={`
-                          w-6 h-6 flex items-center justify-center rounded-full text-xs font-semibold
-                          ${isToday
-                            ? 'bg-blue-600 text-white'
-                            : isHol
-                              ? 'text-red-600'
-                              : isWeekend
-                                ? 'text-gray-400'
-                                : 'text-gray-700'}
-                        `}>
-                          {day}
-                        </span>
-
-                        {canEdit && dayEvs.length === 0 && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleAdd(dayStr) }}
-                            className="opacity-0 hover:opacity-100 group-hover:opacity-100 w-4 h-4 text-gray-300 hover:text-blue-500 text-xs"
-                          >
-                            +
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Event dots / labels */}
-                      <div className="space-y-0.5">
-                        {dayEvs.slice(0, 3).map((ev, ei) => (
-                          <div
-                            key={ev.id + '-' + ei}
-                            className="flex items-center gap-1 px-1 py-0.5 rounded text-white truncate"
-                            style={{ backgroundColor: ev.color + 'cc', fontSize: '10px' }}
-                          >
-                            <EventDot color="white" />
-                            <span className="truncate leading-tight">{ev.title}</span>
-                          </div>
-                        ))}
-                        {dayEvs.length > 3 && (
-                          <p className="text-xs text-gray-400 pl-1">
-                            +{dayEvs.length - 3} more
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+    <DashboardLayout title="Event Calendar">
+      <div className="p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              Holidays, exams, meetings and school events
+            </p>
           </div>
+          {canEdit && (
+            <button
+              onClick={() => setModal({ type: 'add', date: todayStr })}
+              className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors font-medium"
+            >
+              + Add Event
+            </button>
+          )}
         </div>
 
-        {/* Right: Day panel */}
-        {selected && (
-          <DayPanel
-            date={selected}
-            events={selectedEvents}
-            onClose={() => setSelected(null)}
-            onAdd={handleAdd}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            canEdit={canEdit}
-          />
-        )}
+        {/* Legend / filter */}
+        <div className="flex items-center gap-2 flex-wrap mb-5">
+          <button
+            onClick={() => setFilterType('')}
+            className={`px-3 py-1 rounded-full text-xs font-medium border transition
+              ${!filterType ? 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 border-slate-800 dark:border-slate-200' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'}`}
+          >
+            All
+          </button>
+          {EVENT_TYPES.map(t => (
+            <button
+              key={t.value}
+              onClick={() => setFilterType(prev => prev === t.value ? '' : t.value)}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition
+                ${filterType === t.value ? 'text-white border-transparent' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'}`}
+              style={filterType === t.value
+                ? { backgroundColor: t.color, borderColor: t.color }
+                : {}}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: filterType === t.value ? 'white' : t.color }}
+              />
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-5">
+          {/* Left: Upcoming + Calendar */}
+          <div className="flex-1 min-w-0">
+            {/* Upcoming events */}
+            <UpcomingWidget events={upcomingEvents} />
+
+            {/* Calendar card */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/50 rounded-2xl overflow-hidden">
+              {/* Month nav */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+                <button
+                  onClick={prevMonth}
+                  className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition"
+                >
+                  ‹
+                </button>
+                <div className="text-center">
+                  <p className="text-base font-semibold text-slate-800 dark:text-slate-100">
+                    {MONTHS[viewMonth]} {viewYear}
+                  </p>
+                </div>
+                <button
+                  onClick={nextMonth}
+                  className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition"
+                >
+                  ›
+                </button>
+              </div>
+
+              {/* Day headers */}
+              <div className="grid grid-cols-7 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/10">
+                {DAYS_OF_WEEK.map(d => (
+                  <div key={d}
+                    className="py-2 text-center text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
+                    {d}
+                  </div>
+                ))}
+              </div>
+
+              {/* Day cells */}
+              {isLoading ? (
+                <div className="py-16 text-center text-sm text-slate-400">
+                  Loading calendar...
+                </div>
+              ) : (
+                <div className="grid grid-cols-7">
+                  {/* Empty cells before first day */}
+                  {Array.from({ length: firstDay }).map((_, i) => (
+                    <div key={`empty-${i}`} className="min-h-[80px] border-b border-r border-slate-100 dark:border-slate-800/40" />
+                  ))}
+
+                  {/* Day cells */}
+                  {Array.from({ length: total }).map((_, i) => {
+                    const day = i + 1
+                    const dayStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                    const dayEvs = filteredEventMap[dayStr] || []
+                    const isToday = dayStr === todayStr
+                    const isSel = dayStr === selected
+                    const isHol = dayEvs.some(e => e.is_holiday)
+                    const isWeekend = (firstDay + i) % 7 === 0 || (firstDay + i) % 7 === 6
+
+                    return (
+                      <div
+                        key={dayStr}
+                        onClick={() => handleDayClick(dayStr)}
+                        className={`min-h-[80px] p-1.5 border-b border-r border-slate-100 dark:border-slate-800/40 cursor-pointer transition-all
+                          ${isSel ? 'bg-blue-50/50 dark:bg-blue-900/20 ring-2 ring-inset ring-blue-400 dark:ring-blue-500/50' : ''}
+                          ${isHol ? 'bg-red-50/50 dark:bg-red-950/20' : ''}
+                          ${isWeekend && !isHol && !isSel ? 'bg-slate-50/30 dark:bg-slate-800/10' : ''}
+                          ${!isSel && !isHol ? 'hover:bg-slate-50 dark:hover:bg-slate-800/30' : ''}
+                        `}
+                      >
+                        {/* Day number */}
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`
+                            w-6 h-6 flex items-center justify-center rounded-full text-xs font-semibold
+                            ${isToday
+                              ? 'bg-blue-600 text-white'
+                              : isHol
+                                ? 'text-red-600 dark:text-red-400'
+                                : isWeekend
+                                  ? 'text-slate-400 dark:text-slate-500'
+                                  : 'text-slate-700 dark:text-slate-300'}
+                          `}>
+                            {day}
+                          </span>
+
+                          {canEdit && dayEvs.length === 0 && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleAdd(dayStr) }}
+                              className="opacity-0 hover:opacity-100 group-hover:opacity-100 w-4 h-4 text-slate-300 dark:text-slate-600 hover:text-blue-500 text-xs"
+                            >
+                              +
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Event dots / labels */}
+                        <div className="space-y-0.5">
+                          {dayEvs.slice(0, 3).map((ev, ei) => (
+                            <div
+                              key={ev.id + '-' + ei}
+                              className="flex items-center gap-1 px-1 py-0.5 rounded text-white truncate"
+                              style={{ backgroundColor: ev.color + 'cc', fontSize: '10px' }}
+                            >
+                              <EventDot color="white" />
+                              <span className="truncate leading-tight">{ev.title}</span>
+                            </div>
+                          ))}
+                          {dayEvs.length > 3 && (
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 pl-1 font-medium">
+                              +{dayEvs.length - 3} more
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right: Day panel */}
+          {selected && (
+            <DayPanel
+              date={selected}
+              events={selectedEvents}
+              onClose={() => setSelected(null)}
+              onAdd={handleAdd}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              canEdit={canEdit}
+            />
+          )}
+        </div>
       </div>
 
       {/* Modal */}
@@ -714,6 +716,6 @@ export default function CalendarPage() {
           defaultDate={modal.type === 'add' ? modal.date : null}
         />
       )}
-    </div>
+    </DashboardLayout>
   )
 }
