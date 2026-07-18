@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { store } from "./app/store";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import Login from "./pages/Login";
+import LandingPage from "./pages/LandingPage";
 import Students from "./pages/admin/Students";
 import Teachers from "./pages/admin/Teachers";
 import Parents from "./pages/admin/Parents";
@@ -55,6 +56,7 @@ export default function App() {
         <SocketProvider> 
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
 
@@ -153,7 +155,7 @@ export default function App() {
 
             </Route>
 
-            <Route path="*" element={<Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
         </SocketProvider>  
