@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { logout } from '../features/auth/authSlice'
-import { Search, LogOut, UserCircle, Settings, ChevronDown, X } from 'lucide-react'
+import { Search, LogOut, UserCircle, Settings, ChevronDown, X, Menu } from 'lucide-react'
 import ThemeToggle from './ui/ThemeToggle'
 import NotificationBell from './NotificationBell'
 import Breadcrumbs from './ui/Breadcrumbs'
@@ -22,7 +22,7 @@ const ROLE_GRADIENT = {
   parent:  'from-orange-400 to-rose-500',
 }
 
-export default function Navbar({ title }) {
+export default function Navbar({ title, setMobileOpen }) {
   const dispatch    = useDispatch()
   const navigate    = useNavigate()
   const { user }    = useSelector(state => state.auth)
@@ -48,20 +48,28 @@ export default function Navbar({ title }) {
 
   return (
     <header className="
-      h-16 shrink-0 sticky top-0 z-20 px-6
+      h-16 shrink-0 sticky top-0 z-20 px-4 sm:px-6
       flex items-center justify-between gap-4
       bg-slate-50/90 dark:bg-[#0c1020]/90
       backdrop-blur-xl
       border-b border-slate-100 dark:border-slate-800/70
     ">
-      {/* Left — breadcrumb / title */}
-      <div className="flex flex-col justify-center min-w-0">
-        <Breadcrumbs />
-        {title && (
-          <h1 className="text-base font-bold text-slate-800 dark:text-slate-100 font-display leading-tight truncate">
-            {title}
-          </h1>
-        )}
+      {/* Left — hamburger / title */}
+      <div className="flex items-center gap-3 min-w-0">
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="lg:hidden p-2 -ml-1 rounded-xl hover:bg-slate-200/50 dark:hover:bg-slate-800/50 text-slate-500 dark:text-slate-400 transition-colors"
+        >
+          <Menu size={18} />
+        </button>
+        <div className="flex flex-col justify-center min-w-0">
+          <Breadcrumbs />
+          {title && (
+            <h1 className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 font-display leading-tight truncate">
+              {title}
+            </h1>
+          )}
+        </div>
       </div>
 
       {/* Right controls */}

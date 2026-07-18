@@ -110,7 +110,7 @@ export default function Login() {
       {/* ── Right panel (form) ── */}
       <div className="flex-1 flex flex-col">
         {/* Top bar with theme toggle */}
-        <div className="flex justify-between items-center px-8 py-4">
+        <div className="flex justify-between items-center px-4 sm:px-8 py-4">
           <div className="flex lg:hidden items-center gap-2">
             <div className="w-8 h-8 bg-primary-600 rounded-xl flex items-center justify-center">
               <GraduationCap size={16} className="text-white" />
@@ -123,12 +123,12 @@ export default function Login() {
         </div>
 
         {/* Form */}
-        <div className="flex-1 flex items-center justify-center px-8">
+        <div className="flex-1 flex items-center justify-center px-4 sm:px-8">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: 'easeOut' }}
-            className="w-full max-w-md space-y-8"
+            className="w-full max-w-md space-y-6 sm:space-y-8"
           >
             {/* Header */}
             <div className="space-y-1">

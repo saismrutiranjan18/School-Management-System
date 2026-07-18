@@ -105,7 +105,7 @@ const safeStorage = {
   }
 }
 
-export default function Sidebar() {
+export default function Sidebar({ mobileOpen, setMobileOpen }) {
   const dispatch  = useDispatch()
   const navigate  = useNavigate()
   const { user }  = useSelector(state => state.auth)
@@ -127,6 +127,7 @@ export default function Sidebar() {
 
   const handleLogout = () => {
     dispatch(logout())
+    setMobileOpen(false)
     navigate('/login')
   }
 
@@ -135,10 +136,12 @@ export default function Sidebar() {
       style={{ width: collapsed ? 68 : 240 }}
       animate={{ width: collapsed ? 68 : 240 }}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className="
-        relative shrink-0 h-screen sticky top-0 flex flex-col overflow-visible z-20
+      className={`
+        fixed inset-y-0 left-0 z-40 lg:z-20 lg:sticky lg:h-screen flex flex-col overflow-visible
         bg-slate-950 text-slate-300 border-r border-slate-800/50
-      "
+        transition-transform duration-300 lg:transition-none ease-in-out lg:translate-x-0
+        ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}
     >
       {/* ── Logo ── */}
       <div className="flex items-center h-16 px-4 border-b border-slate-800/70 shrink-0">
@@ -167,7 +170,7 @@ export default function Sidebar() {
         className="
           absolute top-[4.25rem] -right-3 w-6 h-6 z-10
           bg-slate-900 border border-slate-700 rounded-full
-          flex items-center justify-center text-slate-400
+          hidden lg:flex items-center justify-center text-slate-400
           hover:text-white hover:border-primary-500 transition-all duration-200 shadow-md
         "
       >
@@ -192,6 +195,7 @@ export default function Sidebar() {
             <NavLink
               key={link.to}
               to={link.to}
+              onClick={() => setMobileOpen(false)}
               title={collapsed ? link.label : undefined}
               className={({ isActive }) => `
                 flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm font-medium transition-all duration-150

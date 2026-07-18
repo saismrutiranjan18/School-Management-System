@@ -145,7 +145,7 @@ function TopperRow({ topper, rank }) {
 function DashboardSkeleton() {
   return (
     <div className="p-6 space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -233,7 +233,7 @@ export default function AdminDashboard() {
         </motion.div>
 
         {/* ── Stat cards ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {statCards.map((card, i) => (
             <motion.div
               key={i}

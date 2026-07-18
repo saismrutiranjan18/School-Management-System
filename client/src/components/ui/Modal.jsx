@@ -97,7 +97,7 @@ export default function Modal({
 
             {/* Footer */}
             {footer && (
-              <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3 shrink-0 bg-slate-50 dark:bg-slate-900/50">
+              <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 shrink-0 bg-slate-50 dark:bg-slate-900/50">
                 {footer}
               </div>
             )}

@@ -40,6 +40,30 @@ export default function DataTable({
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const paginated  = filtered.slice((page - 1) * pageSize, page * pageSize)
 
+  const getVisiblePages = () => {
+    const range = []
+    const delta = 1
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= page - delta && i <= page + delta)) {
+        range.push(i)
+      }
+    }
+    const visible = []
+    let prev = null
+    for (const i of range) {
+      if (prev) {
+        if (i - prev === 2) {
+          visible.push(prev + 1)
+        } else if (i - prev > 2) {
+          visible.push('...')
+        }
+      }
+      visible.push(i)
+      prev = i
+    }
+    return visible
+  }
+
   const handleSort = (key) => {
     if (!key) return
     setSort(s => s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' })
@@ -172,21 +196,30 @@ export default function DataTable({
               >
                 <ChevronLeft size={16} />
               </button>
-              {[...Array(totalPages)].map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setPage(i + 1)}
-                  className={`
-                    w-7 h-7 rounded-lg text-xs font-medium transition-all duration-150
-                    ${page === i + 1
-                      ? 'bg-primary-600 text-white shadow-sm'
-                      : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
-                    }
-                  `}
-                >
-                  {i + 1}
-                </button>
-              ))}
+              {getVisiblePages().map((p, i) => {
+                if (p === '...') {
+                  return (
+                    <span key={`ellipsis-${i}`} className="px-1 text-xs text-slate-400 dark:text-slate-600">
+                      ...
+                    </span>
+                  )
+                }
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`
+                      w-7 h-7 rounded-lg text-xs font-medium transition-all duration-150
+                      ${page === p
+                        ? 'bg-primary-600 text-white shadow-sm'
+                        : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                      }
+                    `}
+                  >
+                    {p}
+                  </button>
+                )
+              })}
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
